@@ -29,7 +29,7 @@ Además, como soporte: inicio de sesión con roles, sincronización de datos de 
 Como **Administrador**, quiero subir el Excel de presupuesto del año para que el sistema controle el gasto.
 
 - [ ] **R1.1** El sistema acepta un `.xlsx` con el formato de `Presupuestos Compras.xlsx`: una fila con los meses como encabezado, una fila "Semanas" y filas de rubro y área. (D6)
-- [ ] **R1.2** Una fila con fórmula `SUM(Bx:By)` es un **rubro**, y las filas de su rango son sus **áreas**. Cada par rubro × área es una **partida**. (D6, D7)
+- [ ] **R1.2** Una fila con una fórmula que suma filas (`SUM(Bx:By)` o `+Bx+By`) es un **rubro**, y esas filas son sus **áreas**. Cada par rubro × área es una **partida**. (D6, D7)
 - [ ] **R1.3** Una fila con valores que no pertenece a ningún rango es una partida con el área `GENERAL` (por ejemplo, POLIETILENO). Se ignoran la fila del total general y las filas de rubro.
 - [ ] **R1.4** Solo se leen las columnas con mes como encabezado. Las columnas con datos y sin encabezado se ignoran y se reportan como advertencia. (D6)
 - [ ] **R1.5** Los valores se redondean a pesos enteros con redondeo hacia arriba en la mitad (`ROUND_HALF_UP`). Una celda vacía es 0. Un valor negativo o no numérico es un error con su fila y columna. (D2, D6)
