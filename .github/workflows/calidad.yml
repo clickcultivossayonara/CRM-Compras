@@ -11,6 +11,20 @@ permissions:
 jobs:
   calidad:
     runs-on: ubuntu-latest
+    services:
+      # Base solo para pruebas de integración; credenciales de prueba, no de producción.
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pruebas
+          POSTGRES_PASSWORD: pruebas
+          POSTGRES_DB: crm_pruebas
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pruebas" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://pruebas:pruebas@localhost:5432/crm_pruebas
     steps:
       - uses: actions/checkout@v4
         with:
@@ -26,6 +40,12 @@ jobs:
 
       - name: Tipos
         run: uv run mypy
+
+      - name: Auditoría de dependencias
+        run: |
+          mkdir -p reports
+          uv export --frozen --no-emit-project -q -o reports/requisitos-auditoria.txt
+          uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict
 
       - name: Humo
         run: uv run pytest tests/humo

@@ -14,6 +14,9 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 | Propiedad (opcional) | `uv sync --group propiedad` y luego `uv run pytest -m propiedad` | — |
 | Linter y formato | `uv run ruff check . && uv run ruff format --check .` | — |
 | Tipos | `uv run mypy` | — |
+| Auditoría de dependencias (S2) | `uv export --frozen --no-emit-project -o reports/requisitos-auditoria.txt` y luego `uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict` | < 30 s |
+| Integración (I1) | `TEST_DATABASE_URL=postgresql://… uv run pytest tests/integracion` | — |
+| Softland real (X1, manual) | `uv run pytest -m softland` | — |
 | SonarCloud | `uv tool run pysonar` (después de la suite completa) | — |
 
 - Cada prueba recibe su marca según la carpeta (`tests/conftest.py`).
@@ -27,7 +30,7 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 | Unitarias | `tests/unitarias/` | Funciones de `dominio/` con casos borde | Sin I/O, sin base de datos, sin red |
 | Caja negra | `tests/caja_negra/` | La API por HTTP: estado, cuerpo y archivo descargado | Solo el fixture `cliente`; nunca importa módulos internos |
 | Humo | `tests/humo/` | Que la app arranca como proceso real y que los flujos críticos responden | < 1 min |
-| Integración | `tests/integracion/` | Repositorios y migraciones contra PostgreSQL | Ver la propuesta I1 |
+| Integración | `tests/integracion/` | Repositorios y migraciones contra PostgreSQL | Se salta sin `TEST_DATABASE_URL`; en CI siempre corre |
 | Propiedad | `tests/unitarias/` con `@pytest.mark.propiedad` | Invariantes P1 a P6 del diseño | Opcionales |
 
 Los datos de prueba siempre son ficticios, creados con fábricas en `tests/fabricas.py`, y nunca se conectan a Softland.
@@ -172,11 +175,13 @@ uv tool run pysonar
 ```
 Con `sonar.qualitygate.wait=true`, el comando falla si el Quality Gate no pasa.
 
-## 5. Pruebas adicionales propuestas (tú decides)
+## 5. Pruebas adicionales (todas aprobadas)
+
+Cada una se construye junto con la tarea que crea el código que prueba; ver [tareas.md](../spec/tareas.md). Hoy están activas **S2** (en CI), la base de **I1** (PostgreSQL en CI; en local se salta sin `TEST_DATABASE_URL`) y la marca de **X1** (`-m softland`, excluida por defecto).
 
 | Id | Prueba | Justificación |
 |---|---|---|
-| I1 | **Integración con PostgreSQL** (Testcontainers o un contenedor de Compose) | Las migraciones, restricciones e índices solo se validan contra una base real. Requiere Docker. |
+| I1 | **Integración con PostgreSQL** (servicio de GitHub Actions; local opcional) | Las migraciones, restricciones e índices solo se validan contra una base real. |
 | I2 | **Concurrencia del presupuesto** | Dos jefes que envían al mismo tiempo contra la misma partida no deben sobregirarla. Necesita un bloqueo de fila y una prueba con envíos simultáneos. |
 | C1 | **Contrato del sincronizador** | El sincronizador (en la red de la empresa) y la API (en la nube) se despliegan por separado. Un esquema compartido y probado en ambos lados evita romper la sincronización. |
 | C2 | **Regresión del cargador contra la plantilla** (golden file) | Si Softland rechaza el archivo, el flujo completo falla. Comparar celda a celda contra la plantilla protege el formato. |
