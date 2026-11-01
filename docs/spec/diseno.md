@@ -89,9 +89,11 @@ Varias líneas de la misma partida en un pedido se evalúan juntas: se suman por
 ### 4.4 Lectura del Excel (R1)
 1. Se busca la fila cuyas celdas tienen nombres de meses (ENERO…DICIEMBRE). Esa fila define las columnas válidas.
 2. La fila con "Semanas" en la columna A da el número de semanas por mes. Se valida con 4.1.
-3. Una fila con fórmula `SUM(Bx:By)` es un rubro y su rango define sus áreas.
-4. Una fila numérica fuera de todo rango es una partida con área `GENERAL`.
-5. Los nombres se normalizan: sin espacios sobrantes, en mayúsculas y conservando las tildes.
+3. Una fila con una fórmula que suma filas (`SUM(Bx:By)` o `+Bx+By`) es un rubro, y esas filas son sus áreas. Si una de ellas es otra fórmula (por ejemplo, CULTIVOS (CAMPO) dentro de HERRAMIENTAS), sus filas son áreas del mismo rubro con nombre compuesto: `CULTIVOS (CAMPO) - LA CEJA`.
+4. El total general es la fórmula que ninguna otra suma y que suma rubros. No necesita llamarse "TOTAL" (en el Excel real es MATERIA PRIMA).
+5. Una fila numérica fuera de todo rubro, o sumada directamente por el total, es una partida con área `GENERAL`. Una fila con nombre y sin valores se ignora con advertencia (por ejemplo, PROYECTOS).
+6. El dominio recibe las filas como las entrega openpyxl con fórmulas; el año lo indica el Administrador al cargar.
+7. Los nombres se normalizan: sin espacios sobrantes, en mayúsculas y conservando las tildes.
 
 ### 4.5 Máquina de estados (D16)
 ```
