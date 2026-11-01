@@ -5,9 +5,9 @@ Una tarea a la vez, en orden. Cada una termina con sus pruebas en verde y el res
 Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 
 ## Fase 0 — Base del proyecto
-- [ ] **T0.1** Crear el esqueleto: `pyproject.toml` con uv, ruff, mypy strict, pytest y pytest-cov, la estructura de [diseno.md §2](diseno.md#2-módulos), `.env.example` y `.gitignore`. → R6.1
+- [x] **T0.1** Crear el esqueleto: `pyproject.toml` con uv, ruff, mypy strict, pytest y pytest-cov, la estructura de [diseno.md §2](diseno.md#2-módulos), `.env.example` y `.gitignore`. → R6.1
 - [ ] **T0.2** Crear Docker Compose con PostgreSQL y la configuración por variables de entorno. → R6.1
-- [ ] **T0.3** Configurar SonarCloud y el comando de calidad (fase 3 del plan de trabajo). → todos
+- [ ] **T0.3** Configurar SonarCloud y el comando de calidad. Archivo listo; falta crear el proyecto y el Quality Gate en SonarCloud y el primer análisis. → todos
 
 ## Fase 1 — Dominio (sin I/O)
 - [ ] **T1.1** `calendario`: semana ISO, mes según el jueves y semanas de cada mes. Pruebas: 2025-W40 → octubre, años de 53 semanas, 1 de enero en la semana 53 del año anterior. → R1.6, R2.2
