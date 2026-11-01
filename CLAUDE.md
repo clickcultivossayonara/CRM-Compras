@@ -78,7 +78,7 @@ Aplicación Flask existente (Python + pyodbc) que ya consulta Softland (esquema 
 - **Sincronizador**: Python + `pyodbc` (ODBC Driver 17/18 for SQL Server), solo con consultas `SELECT`.
 - **Excel**: `openpyxl`, para leer el presupuesto y generar el cargador.
 - **Autenticación**: usuario y contraseña con hash `argon2-cffi`, sesión firmada con una clave tomada de una variable de entorno, y roles desde la base de datos.
-- **Local**: Docker Compose para PostgreSQL.
+- **PostgreSQL de pruebas**: servicio de GitHub Actions en CI; en local, opcional con `TEST_DATABASE_URL` (no se usa Docker Desktop por su licencia comercial).
 
 ### Estructura
 ```

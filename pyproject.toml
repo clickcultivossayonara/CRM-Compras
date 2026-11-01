@@ -15,6 +15,7 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "httpx2>=2.16.0",
+    "psycopg[binary]>=3.2",
 ]
 # Pruebas de propiedad: opcionales, se instalan con `uv sync --group propiedad`.
 propiedad = [
@@ -30,13 +31,19 @@ packages = ["src/crm_compras"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers -m 'not propiedad'"
+addopts = "--strict-markers -m 'not propiedad and not softland'"
 markers = [
     "unitaria: lógica del dominio, sin I/O",
     "caja_negra: comportamiento por entradas y salidas de la API",
     "humo: arranque y flujos críticos, rápido",
     "integracion: con base de datos real",
     "propiedad: pruebas de propiedad (opcionales)",
+    "softland: consultas reales contra Softland de solo lectura (X1, manual)",
+    "concurrencia: envíos simultáneos contra la misma partida (I2)",
+    "contrato: contrato entre sincronizador y API (C1)",
+    "regresion_cargador: cargador comparado con la plantilla (C2)",
+    "autorizacion: matriz de permisos por rol (S1)",
+    "rendimiento: tiempos de respuesta (R1)",
 ]
 
 [tool.coverage.run]
