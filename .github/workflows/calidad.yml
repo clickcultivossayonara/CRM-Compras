@@ -33,7 +33,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
 
       - name: Instalar dependencias
-        run: uv sync --locked
+        run: uv sync --locked --group propiedad # Hypothesis solo para que mypy revise las pruebas de propiedad
 
       - name: Linter y formato
         run: uv run ruff check . && uv run ruff format --check .
@@ -44,7 +44,7 @@ jobs:
       - name: Auditoría de dependencias
         run: |
           mkdir -p reports
-          uv export --frozen --no-emit-project -q -o reports/requisitos-auditoria.txt
+          uv export --frozen --no-emit-project --group propiedad -q -o reports/requisitos-auditoria.txt
           uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict
 
       - name: Humo

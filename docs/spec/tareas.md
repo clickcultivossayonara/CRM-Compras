@@ -13,8 +13,8 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 
 ## Fase 1 — Dominio (sin I/O)
 - [x] **T1.1** `calendario`: semana ISO, mes según el jueves y semanas de cada mes. Pruebas: 2025-W40 → octubre, años de 53 semanas, 1 de enero en la semana 53 del año anterior. → R1.6, R2.2
-- [ ] **T1.2** `presupuesto.repartir_mes`: reparto con residuo en la última semana. → R2.2
-  - [ ] **T1.2p** (opcional) Propiedad P1.
+- [x] **T1.2** `presupuesto.repartir_mes`: reparto con residuo en la última semana. → R2.2
+  - [x] **T1.2p** (opcional) Propiedad P1.
 - [ ] **T1.3** `presupuesto.saldo` y `disponible`. Pruebas: saldo exacto, saldo cero, acumulado entre meses, consumo futuro que limita el disponible. → R2.1, R2.3, R2.4
   - [ ] **T1.3p** (opcional) Propiedades P2 y P3.
 - [ ] **T1.4** `lector_presupuesto`: celdas → partidas, advertencias y errores, con fixtures ficticios que imitan el formato real. → R1.1–R1.6
