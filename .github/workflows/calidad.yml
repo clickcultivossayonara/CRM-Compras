@@ -1,0 +1,43 @@
+name: Calidad
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  calidad:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # SonarCloud necesita el historial para identificar el código nuevo
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Instalar dependencias
+        run: uv sync --locked
+
+      - name: Linter y formato
+        run: uv run ruff check . && uv run ruff format --check .
+
+      - name: Tipos
+        run: uv run mypy
+
+      - name: Humo
+        run: uv run pytest tests/humo
+
+      - name: Suite completa con cobertura
+        run: |
+          mkdir -p reports
+          uv run pytest --cov --cov-report=xml --junitxml=reports/pytest.xml
+
+      - name: SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+        run: uv tool run pysonar
