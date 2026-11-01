@@ -11,3 +11,4 @@ reports/
 .env
 *.xlsx
 !tests/fixtures/*.xlsx
+.claude/settings.local.json

@@ -1,0 +1,31 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"$CLAUDE_PROJECT_DIR/.claude/hooks/bloquear_secretos.py\"",
+            "timeout": 10,
+            "onFailure": "block",
+            "statusMessage": "Revisando secretos y datos reales..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -I \"$CLAUDE_PROJECT_DIR/.claude/hooks/ejecutar_pruebas.py\"",
+            "timeout": 120,
+            "statusMessage": "Corriendo pruebas unitarias y de caja negra..."
+          }
+        ]
+      }
+    ]
+  }
+}
