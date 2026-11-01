@@ -123,9 +123,10 @@ Cualquier otra transición genera `TransicionInvalida`.
 - Una prueba compara el archivo generado con la plantilla `Bodega 5.xlsx`, usando una versión ficticia en `tests/fixtures/`.
 
 ## 7. Seguridad
-- Secretos por variables de entorno: `DATABASE_URL`, `SECRET_KEY`, `SYNC_TOKEN`, `SOFTLAND_DSN`, `SOFTLAND_USUARIO`, `SOFTLAND_CLAVE`.
+- Secretos por variables de entorno: `DATABASE_URL`, `SECRET_KEY`, `SYNC_TOKEN`, `SOFTLAND_SERVIDOR`, `SOFTLAND_BASE`, `SOFTLAND_USUARIO`, `SOFTLAND_CLAVE`.
 - Formularios con protección CSRF. Cookies `HttpOnly`, `Secure` y `SameSite=Lax`.
-- El sincronizador usa un usuario de SQL Server con permiso **db_datareader** y nada más.
+- El usuario de SQL Server disponible es el mismo de Almacen y tiene permisos de **sysadmin** (decisión del responsable: no se crea otro). Por eso la solo lectura se garantiza en el código: solo `SELECT` fijos con parámetros, filtro que rechaza instrucciones de escritura, `ROLLBACK` al terminar y `READ UNCOMMITTED` para no bloquear el ERP.
+- Tablas confirmadas en Softland: `SAYONARA.ARTICULO` (`ACTIVO` = `S`/`N`, `UNIDAD_ALMACEN`), `SAYONARA.CENTRO_COSTO` (`CENTRO_COSTO`, `DESCRIPCION`, `ACEPTA_DATOS`), `SAYONARA.BODEGA` y `SAYONARA.ORDEN_COMPRA_LINEA` (incluye `CENTRO_COSTO`, útil para sugerir partidas).
 
 ## 8. Propiedades para pruebas de propiedad (opcionales)
 - **P1** La suma del reparto semanal es igual al valor del mes, y ninguna semana es negativa.

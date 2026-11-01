@@ -60,7 +60,8 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 - [ ] **T5.5** S3: OWASP ZAP baseline contra la app desplegada. → R6.1
 
 ## Pendientes externos (no bloquean el desarrollo)
-- [ ] **E1** TI crea un usuario de SQL Server de solo lectura (`db_datareader`) sobre `SAYOERP`. → R6.2
-- [ ] **E2** Confirmar las tablas de centros de costo y el campo de artículo activo en Softland. → R6.2
-- [ ] **E3** Lista real de unidades que admiten decimales. → R6.7
+- [x] **E1** Usuario de SQL Server: se usa el mismo de Almacen (sysadmin), por decisión del responsable; la solo lectura se garantiza en el código. → R6.2
+- [x] **E2** Tablas confirmadas: `CENTRO_COSTO` (`ACEPTA_DATOS`) y `ARTICULO.ACTIVO` (`S`/`N`). → R6.2
+- [x] **E3** Unidades con decimales: KL, CC, MT, GR, GL, LB, LT. Solo enteros: UND, PAR, RLL y cualquier otra unidad. → R6.7
+- [x] **E5** Servidor MCP `softland-lectura` (desarrollo) en `herramientas/mcp_softland`, registrado en `.mcp.json`. → R6.2
 - [ ] **E4** Versión de Softland y opción de importación automática (fuera del MVP).

@@ -94,4 +94,4 @@ Como **Comprador**, quiero descargar un solo archivo validado para importarlo en
 - [ ] **R6.4** El precio del artículo `020215` se divide por el factor numérico de su comentario, como en Almacen. (D4)
 - [ ] **R6.5** La pantalla muestra la fecha de la última sincronización. Si tiene más de 24 horas, se muestra una advertencia.
 - [ ] **R6.6 Auditoría**: registro que solo admite inserciones, consultable por el Administrador. (D19)
-- [ ] **R6.7** Las unidades que admiten decimales están en una lista que mantiene el Administrador. Por defecto, todas exigen cantidades enteras. (D13)
+- [ ] **R6.7** Las unidades que admiten decimales están en una lista que mantiene el Administrador. La lista inicial es KL, CC, MT, GR, GL, LB y LT; cualquier otra unidad exige cantidades enteras. (D13)
