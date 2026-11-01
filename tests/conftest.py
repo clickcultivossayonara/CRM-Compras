@@ -15,6 +15,7 @@ _MARCAS = {
     "caja_negra": "caja_negra",
     "humo": "humo",
     "integracion": "integracion",
+    "herramientas": "unitaria",
 }
 
 

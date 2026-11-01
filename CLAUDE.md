@@ -82,6 +82,7 @@ Aplicación Flask existente (Python + pyodbc) que ya consulta Softland (esquema 
 
 ### Estructura
 ```
+herramientas/mcp_softland/   # MCP de solo lectura a Softland, solo para desarrollo
 src/crm_compras/dominio/     # reglas puras, sin I/O (presupuesto, pedido, validaciones, cargador)
 src/crm_compras/datos/       # modelos SQLAlchemy y repositorios
 src/crm_compras/web/         # rutas FastAPI y plantillas Jinja2

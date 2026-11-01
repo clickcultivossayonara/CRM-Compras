@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "softland-lectura": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "mcp_softland.servidor"],
+      "env": {
+        "SOFTLAND_SERVIDOR": "${SOFTLAND_SERVIDOR}",
+        "SOFTLAND_USUARIO": "${SOFTLAND_USUARIO}",
+        "SOFTLAND_CLAVE": "${SOFTLAND_CLAVE}",
+        "SOFTLAND_BASE": "${SOFTLAND_BASE:-SAYOERP}"
+      }
+    }
+  }
+}
