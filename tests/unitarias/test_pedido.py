@@ -19,6 +19,7 @@ from crm_compras.dominio.pedido import (
     validar_linea,
     validar_pedido,
 )
+from tests.fabricas import ANCHO_COMPLETO, ARABIGOS, otros_digitos
 
 HOY = date(2026, 11, 5)
 PARTIDA = 1
@@ -81,7 +82,18 @@ def test_codigo_con_cero_a_la_izquierda_se_conserva_como_texto() -> None:
     assert resultado.linea.articulo == "020093"
 
 
-@pytest.mark.parametrize("codigo", ["20093", "0200930", "02009A", "", " 020093"])
+@pytest.mark.parametrize(
+    "codigo",
+    [
+        "20093",
+        "0200930",
+        "02009A",
+        "",
+        " 020093",
+        otros_digitos("020093", ANCHO_COMPLETO),
+        otros_digitos("020093", ARABIGOS),
+    ],
+)
 def test_codigo_con_formato_invalido(codigo: str) -> None:
     assert errores(articulo=codigo) == [f"El código {codigo!r} no tiene el formato de 6 dígitos."]
 
