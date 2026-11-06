@@ -19,12 +19,14 @@ tar -C "$origen" \
     -cf - . | tar -C "$destino" -xf -
 cd "$destino" || exit 1
 
-uv sync --frozen --group mutacion -q || exit 1
-uv run --frozen mutmut run > mutmut.log 2>&1 || { tail -20 mutmut.log; exit 1; }
-uv run --frozen mutmut results
-uv run --frozen mutmut export-cicd-stats > /dev/null || exit 1
+# Sin --no-build uv podría ejecutar scripts de instalación. El proyecto no se instala:
+# mutmut lo carga desde su copia en mutants/src.
+uv sync --frozen --no-build --no-install-project --group mutacion -q || exit 1
+uv run --no-sync --no-build mutmut run > mutmut.log 2>&1 || { tail -20 mutmut.log; exit 1; }
+uv run --no-sync --no-build mutmut results
+uv run --no-sync --no-build mutmut export-cicd-stats > /dev/null || exit 1
 
-uv run --frozen python - "$UMBRAL" <<'PY'
+uv run --no-sync --no-build python - "$UMBRAL" <<'PY'
 import json
 import sys
 
