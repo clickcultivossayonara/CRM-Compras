@@ -88,7 +88,7 @@ def validar_linea(linea: LineaPedido, contexto: ContextoValidacion) -> LineaVali
     precio = contexto.precios.get(linea.articulo)
     if articulo is not None and precio is None:
         errores.append(f"El artículo {linea.articulo} no tiene compras previas y no tiene precio.")
-    if precio is not None and linea.cantidad > 0:
+    if precio is not None and linea.cantidad.is_finite() and linea.cantidad > 0:
         resultado.valor = valor_linea(linea.cantidad, precio)
 
     if linea.articulo in contexto.prohibidos:
@@ -160,6 +160,9 @@ def _validar_partida(linea: LineaPedido, contexto: ContextoValidacion, errores: 
 def _validar_cantidad(
     cantidad: Decimal, articulo: Articulo | None, contexto: ContextoValidacion, errores: list[str]
 ) -> None:
+    if not cantidad.is_finite():
+        errores.append("La cantidad no es un número válido.")
+        return
     if cantidad <= 0:
         errores.append("La cantidad debe ser mayor que cero.")
         return

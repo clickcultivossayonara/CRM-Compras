@@ -24,8 +24,8 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
   - [x] **T1.7p** (opcional) Propiedad P5.
 - [x] **T1.8** `cargador.armar`: hojas por bodega, orden de columnas, bodega faltante → error. → R5.1, R5.2, R5.5
   - [x] **T1.8p** (opcional) Propiedad P6.
-- [ ] **T1.9** (opcional) Propiedad P4 del calendario.
-- [ ] **T1.10** M1: pruebas de mutación (`mutmut`) sobre `dominio/` al cerrar la fase 1, con umbral acordado. → R2, R3
+- [x] **T1.9** (opcional) Propiedad P4 del calendario.
+- [x] **T1.10** M1: pruebas de mutación (`mutmut`) sobre `dominio/` al cerrar la fase 1, con umbral acordado. → R2, R3
 
 ## Fase 2 — Datos y sesión
 - [ ] **T2.1** Modelos SQLAlchemy y migración inicial de [diseno.md §3](diseno.md#3-modelo-de-datos-base-propia). I1: migraciones y restricciones probadas contra PostgreSQL. → R1, R3, R5, R6.6

@@ -12,6 +12,7 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 | Solo unitarias / caja negra | `uv run pytest -m unitaria` · `uv run pytest -m caja_negra` | — |
 | Caja negra contra un servidor real | `CRM_URL_BASE=https://… uv run pytest tests/caja_negra` | — |
 | Propiedad (opcional) | `uv sync --group propiedad` y luego `uv run pytest -m propiedad` | — |
+| Mutación (M1, Linux o WSL) | `wsl -d Ubuntu -- bash herramientas/mutacion.sh` (umbral: 80 % de mutantes eliminados) | < 1 min |
 | Linter y formato | `uv run ruff check . && uv run ruff format --check .` | — |
 | Tipos | `uv run mypy` | — |
 | Auditoría de dependencias (S2) | `uv export --frozen --no-emit-project -o reports/requisitos-auditoria.txt` y luego `uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict` | < 30 s |
@@ -21,6 +22,7 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 
 - Cada prueba recibe su marca según la carpeta (`tests/conftest.py`).
 - Las pruebas de propiedad no se ejecutan por defecto (`-m 'not propiedad'`).
+- mutmut no corre en Windows. `herramientas/mutacion.sh` copia el proyecto a una carpeta de Linux, muta solo `dominio/` con las pruebas unitarias y falla si se elimina menos del 80 % de los mutantes (`UMBRAL_MUTACION`). Los sobrevivientes que quedan son textos de mensajes o cambios equivalentes.
 - La cobertura mínima local es del 80 % (`fail_under`). Si no se alcanza, la suite falla.
 
 ## 2. Niveles
