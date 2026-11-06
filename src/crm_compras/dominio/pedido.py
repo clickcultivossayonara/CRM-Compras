@@ -14,7 +14,8 @@ BODEGA_PROHIBIDOS = 5
 UNIDADES_DECIMALES = frozenset({"KL", "CC", "MT", "GR", "GL", "LB", "LT"})
 DECIMALES_CANTIDAD = 2
 
-_CODIGO_ARTICULO = re.compile(r"\d{6}")
+# Solo dígitos ASCII: \d también acepta dígitos de otros alfabetos.
+_CODIGO_ARTICULO = re.compile(r"[0-9]{6}")
 
 
 @dataclass(frozen=True)

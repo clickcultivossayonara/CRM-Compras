@@ -22,8 +22,8 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 - [x] **T1.6** `pedido.validar_linea` y `validar_pedido`: todos los errores y advertencias de R3.5, más bodega 5 para prohibidos. → R3.5, R3.6, R3.8
 - [x] **T1.7** `pedido` máquina de estados y decisión `enviado` / `pendiente_gerencia`. → R3.9, R3.10, R4.1, R4.2, R4.4
   - [x] **T1.7p** (opcional) Propiedad P5.
-- [ ] **T1.8** `cargador.armar`: hojas por bodega, orden de columnas, bodega faltante → error. → R5.1, R5.2, R5.5
-  - [ ] **T1.8p** (opcional) Propiedad P6.
+- [x] **T1.8** `cargador.armar`: hojas por bodega, orden de columnas, bodega faltante → error. → R5.1, R5.2, R5.5
+  - [x] **T1.8p** (opcional) Propiedad P6.
 - [ ] **T1.9** (opcional) Propiedad P4 del calendario.
 - [ ] **T1.10** M1: pruebas de mutación (`mutmut`) sobre `dominio/` al cerrar la fase 1, con umbral acordado. → R2, R3
 
