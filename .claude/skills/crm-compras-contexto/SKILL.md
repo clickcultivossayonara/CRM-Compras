@@ -30,11 +30,24 @@ Las reglas del dominio y el stack están en `CLAUDE.md`, y la especificación en
 | 4. Hooks (secretos y pruebas) | ✅ | PR #4 |
 | 5. MCP `softland-lectura` | ✅ | PR #5 |
 | T1.1 Calendario semanal | ✅ | PR #6 |
-| **T1.2 Reparto semanal del presupuesto** | ⏭️ **siguiente** | — |
+| Skill de contexto | ✅ | PR #7 |
+| T1.2 Reparto semanal (`presupuesto.repartir_mes`) + propiedad P1 | ✅ | PR #8 |
+| T1.3 Saldo y disponible (`saldos`, `disponibles`, `cabe`) + propiedades P2 y P3 | ✅ | PR #9 |
+| T1.4 Lector del Excel (`lector_presupuesto.leer_presupuesto`) | ✅ | PR #10 |
+| T1.5 Precios (`precios.normalizar`, regla del `020215`) | ✅ | PR #11 |
+| T1.6 Validación de líneas y pedido (`pedido.validar_linea`, `validar_pedido`) | ✅ | PR #12 |
+| **T1.7 Máquina de estados del pedido** | ⏭️ **siguiente** | — |
 
-Los 6 PR están fusionados en `main`, con el workflow y el Quality Gate en verde.
+Los 12 PR están fusionados en `main`, con el workflow y el Quality Gate en verde (168 pruebas en CI, cobertura del 100 %).
 
-**T1.2:** `dominio/presupuesto.repartir_mes(valor_mes, n_semanas)`. Se usa `divmod` y el residuo va a la última semana; solo se aceptan 4 o 5 semanas y valores ≥ 0. Los casos están en `plan-pruebas.md` §3.2. La propiedad P1 (T1.2p) es **opcional**: preguntar antes de hacerla.
+**T1.7:** máquina de estados en `dominio/pedido` y decisión `enviado` / `pendiente_gerencia` (R3.9, R3.10, R4.1, R4.2, R4.4). Transiciones en `diseno.md` §4.5; cualquier otra lanza `TransicionInvalida`. Casos en `plan-pruebas.md` §3.6. La decisión usa `presupuesto.cabe` por partida. P5 (T1.7p) es opcional: preguntar.
+
+**Cómo quedó el dominio hecho (para usarlo en las tareas siguientes):**
+- `presupuesto`: las semanas de una partida van en listas; la posición *i* es la semana *i* + 1 del año ISO. `cabe(asignado, consumido, lineas)` recibe las líneas como pares `(posición de semana, valor)`, las suma por semana y responde si caben sin Gerencia.
+- `lector_presupuesto.leer_presupuesto(filas, anio)`: recibe las filas como las da openpyxl **con fórmulas** (`iter_rows(values_only=True)` sin `data_only`); devuelve `Lectura` con `semanas`, `partidas` (`PartidaLeida`: rubro, área, fila, valores por mes), `advertencias` y `errores`. Probado en local contra el Excel real: 66 partidas, 0 errores.
+- `precios.normalizar(articulo, precio_unitario: Decimal, comentario)` → `int | None`.
+- `pedido`: `LineaPedido` (articulo, centro_costo, partida_id, cantidad `Decimal`, fecha_requerida, comentario), `ContextoValidacion` (hoy, articulos, precios, centros, centros y partidas del jefe con su año, años con presupuesto, prohibidos, otros_pedidos) y `LineaValidada` (errores, advertencias, valor, bodega). `anio_presupuesto(fecha)` = año del mes del jueves de su semana. `valor_linea(cantidad, precio)` con `ROUND_HALF_UP`. `UNIDADES_DECIMALES` y `BODEGA_PROHIBIDOS` son constantes del módulo.
+- Las pruebas de propiedad importan Hypothesis **dentro** de la prueba, para que la suite corra sin el grupo `propiedad`. CI instala ese grupo para que mypy las revise.
 
 ## 3. Decisiones tomadas con el responsable
 
@@ -50,6 +63,10 @@ Los 6 PR están fusionados en `main`, con el workflow y el Quality Gate en verde
 - **Unidades con decimales:** KL, CC, MT, GR, GL, LB y LT. Todas las demás (UND, PAR, RLL…) solo aceptan enteros.
 - **Sin Docker Desktop**, por su licencia comercial. PostgreSQL de pruebas: el servicio de GitHub Actions; en local es opcional, con `TEST_DATABASE_URL`.
 - Se incluyeron **todas** las pruebas adicionales. Cada una se construye junto con la tarea que crea el código que prueba (ver `tareas.md`).
+- **Pruebas de propiedad:** el responsable aprobó hacerlas (P1, P2 y P3 hechas). Igual preguntar antes de cada una, porque son opcionales.
+- **Excel de presupuesto (T1.4):** un rubro dentro de otro (CULTIVOS (CAMPO) dentro de HERRAMIENTAS) da partidas con **área compuesta**: `HERRAMIENTAS / CULTIVOS (CAMPO) - LA CEJA`. Una fila con nombre y sin valores (PROYECTOS) se **ignora con advertencia**. Los rubros pueden usar `SUM(Bx:By)` o `+Bx+By`. El total general (MATERIA PRIMA, fila 7) se reconoce por estructura, no por el nombre. El año lo indica el Administrador al cargar.
+- **Precio del `020215` (T1.5):** si el factor del comentario es 0 o está mal formado, el artículo queda **sin precio** (la línea se bloquea). En Almacen esos casos dan error o NULL. Se le informó al responsable; puede pedir usar el precio sin dividir.
+- **Validación de líneas (T1.6):** además de R3.5 se agregaron, informando al responsable: máximo **2 decimales** en unidades decimales (la base usa `Numeric(12,2)`) y la **partida debe ser del mismo año** que la fecha requerida.
 
 ## 4. Softland (solo lectura)
 
@@ -118,9 +135,13 @@ Verificación completa antes de cada commit: ruff, formato, mypy, la suite con c
 - **Bash con heredocs** que contienen comillas simples a veces falla con "unexpected EOF". En ese caso, escribir el archivo con la herramienta Write.
 - **`python -I`** no agrega la carpeta del script al `sys.path`. Para el MCP se usa `python -m mcp_softland.servidor`, con el paquete registrado en `pyproject.toml`.
 - Los avisos `LF will be replaced by CRLF` son normales en Windows: el repositorio guarda LF.
+- **Fusionar PR:** el clasificador de permisos de Claude Code bloquea `gh pr merge` ("fusión sin revisión"). No intentar saltarlo: el responsable fusiona desde GitHub y avisa. Después: `git switch main && git pull --ff-only` y nueva rama.
+- **ruff RUF001/002/003** rechaza `×`, `–` y `−` en textos, docstrings y comentarios. Usar `/`, "a" o `-`.
+- **openpyxl** no está en las dependencias todavía (llega con `web/`). Para inspeccionar el Excel real en local: `uv run --with openpyxl python -I script.py`, con el script en el scratchpad, sin imprimir montos y sin copiar datos al repositorio. El Excel real está en `C:\Users\stecnologia\Downloads\Presupuestos Compras.xlsx`. La consola muestra `�` en las tildes, pero los datos están bien.
+- **Esperar el workflow de un PR:** `Monitor` con un bucle sobre `gh run list --branch <rama> --json status,conclusion` y luego `gh run view <id> --log | grep "QUALITY GATE"`.
 
 ## 10. Pendientes
 
-- **T1.2 en adelante** (fase 1 del dominio). Ver `docs/spec/tareas.md`.
+- **T1.7 en adelante** (fase 1 del dominio): T1.7 máquina de estados (+ P5 opcional), T1.8 cargador (+ P6 opcional), T1.9 P4 del calendario (opcional) y T1.10 mutación (M1). Ver `docs/spec/tareas.md`.
 - **E4:** versión de Softland y si permite importación automática (fuera del MVP).
 - Las pruebas adicionales que esperan su tarea: I2 (T4.4), C1 y X1 (T3.2), C2 (T4.6), S1 (T2.3), R1 (T4.1 y T4.4), M1 (T1.10), y E1, A1 y S3 (fase 5).
