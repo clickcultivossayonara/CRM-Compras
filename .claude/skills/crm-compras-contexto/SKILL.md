@@ -36,17 +36,25 @@ Las reglas del dominio y el stack están en `CLAUDE.md`, y la especificación en
 | T1.4 Lector del Excel (`lector_presupuesto.leer_presupuesto`) | ✅ | PR #10 |
 | T1.5 Precios (`precios.normalizar`, regla del `020215`) | ✅ | PR #11 |
 | T1.6 Validación de líneas y pedido (`pedido.validar_linea`, `validar_pedido`) | ✅ | PR #12 |
-| **T1.7 Máquina de estados del pedido** | ⏭️ **siguiente** | — |
+| T1.7 Máquina de estados (`enviar`, `aprobar`, `rechazar`, `anular`, `exportar`) + P5 | ✅ | PR #14 |
+| T1.8 Cargador (`cargador.armar_cargador`, `lineas_para_lote`) + P6 | ✅ | PR #15 |
+| T1.9 Propiedad P4 del calendario + T1.10 mutación M1 (97,6 %) | ✅ | PR #16 |
+| **Fase 1 (dominio) completa. Siguiente: fase 2** (ver `docs/spec/tareas.md`) | ⏭️ **siguiente** | — |
 
-Los 12 PR están fusionados en `main`, con el workflow y el Quality Gate en verde (168 pruebas en CI, cobertura del 100 %).
+Los 16 PR están fusionados en `main` con el workflow y el Quality Gate en verde (228 pruebas en CI, cobertura del 100 %; SonarCloud en `main`: 0 bugs, 0 vulnerabilidades, 0 code smells, 0 % de duplicación).
 
-**T1.7:** máquina de estados en `dominio/pedido` y decisión `enviado` / `pendiente_gerencia` (R3.9, R3.10, R4.1, R4.2, R4.4). Transiciones en `diseno.md` §4.5; cualquier otra lanza `TransicionInvalida`. Casos en `plan-pruebas.md` §3.6. La decisión usa `presupuesto.cabe` por partida. P5 (T1.7p) es opcional: preguntar.
+**Próxima sesión (fase 2):**
+1. **Instalar PostgreSQL en WSL (Ubuntu)**, aprobado por el responsable, para correr en local las pruebas de integración (I1) con `TEST_DATABASE_URL`. Sin Docker. Requiere `sudo` dentro de Ubuntu: la contraseña de Linux la escribe el responsable, nunca se pide en el chat. Usar credenciales de prueba, solo en variables de entorno.
+2. **T2.1**: modelos SQLAlchemy y migración inicial de `diseno.md` §3, con I1. Después T2.2 (auditoría solo de inserción), T2.3 (sesión, argon2, roles, CSRF y S1) y T2.4 (administración).
 
 **Cómo quedó el dominio hecho (para usarlo en las tareas siguientes):**
 - `presupuesto`: las semanas de una partida van en listas; la posición *i* es la semana *i* + 1 del año ISO. `cabe(asignado, consumido, lineas)` recibe las líneas como pares `(posición de semana, valor)`, las suma por semana y responde si caben sin Gerencia.
 - `lector_presupuesto.leer_presupuesto(filas, anio)`: recibe las filas como las da openpyxl **con fórmulas** (`iter_rows(values_only=True)` sin `data_only`); devuelve `Lectura` con `semanas`, `partidas` (`PartidaLeida`: rubro, área, fila, valores por mes), `advertencias` y `errores`. Probado en local contra el Excel real: 66 partidas, 0 errores.
 - `precios.normalizar(articulo, precio_unitario: Decimal, comentario)` → `int | None`.
 - `pedido`: `LineaPedido` (articulo, centro_costo, partida_id, cantidad `Decimal`, fecha_requerida, comentario), `ContextoValidacion` (hoy, articulos, precios, centros, centros y partidas del jefe con su año, años con presupuesto, prohibidos, otros_pedidos) y `LineaValidada` (errores, advertencias, valor, bodega). `anio_presupuesto(fecha)` = año del mes del jueves de su semana. `valor_linea(cantidad, precio)` con `ROUND_HALF_UP`. `UNIDADES_DECIMALES` y `BODEGA_PROHIBIDOS` son constantes del módulo.
+- `pedido` (estados): `Estado` y `Rol` (`StrEnum` con los valores de la base). `enviar(estado, lineas_validadas, saldos: {partida_id: SaldoPartida})` → `ENVIADO` o `PENDIENTE_GERENCIA`; `partidas_que_exceden` para mostrar el exceso al Gerente; `aprobar(estado, rol, justificacion)`, `rechazar(estado, rol, motivo)`, `anular(estado, motivo)`, `exportar(estado)`, `verificar_editable(estado)`, `compromete_presupuesto(estado)`. Errores de flujo: `TransicionInvalida` (con `noqa: N818`, nombre del diseño); datos faltantes: `ValueError`.
+- `cargador`: `LineaCargador` (con `prohibido`, `bodega` y `lote_id`), `armar_cargador(lineas)` → `{nombre_hoja: [filas]}` ordenado por bodega y por `linea_id`; `CargadorError.problemas`; `ENCABEZADOS` y `HOJAS` (`La Union`, `La Ceja`, `Prohibidos`) tomados de la plantilla real `Bodega 5.xlsx`. Escribir el `.xlsx` y compararlo con una plantilla ficticia es de T4.6 (C2).
+- `tests/fabricas.py`: fábricas compartidas (por ahora, `otros_digitos` para dígitos no ASCII).
 - Las pruebas de propiedad importan Hypothesis **dentro** de la prueba, para que la suite corra sin el grupo `propiedad`. CI instala ese grupo para que mypy las revise.
 
 ## 3. Decisiones tomadas con el responsable
@@ -66,7 +74,9 @@ Los 12 PR están fusionados en `main`, con el workflow y el Quality Gate en verd
 - **Pruebas de propiedad:** el responsable aprobó hacerlas (P1, P2 y P3 hechas). Igual preguntar antes de cada una, porque son opcionales.
 - **Excel de presupuesto (T1.4):** un rubro dentro de otro (CULTIVOS (CAMPO) dentro de HERRAMIENTAS) da partidas con **área compuesta**: `HERRAMIENTAS / CULTIVOS (CAMPO) - LA CEJA`. Una fila con nombre y sin valores (PROYECTOS) se **ignora con advertencia**. Los rubros pueden usar `SUM(Bx:By)` o `+Bx+By`. El total general (MATERIA PRIMA, fila 7) se reconoce por estructura, no por el nombre. El año lo indica el Administrador al cargar.
 - **Precio del `020215` (T1.5):** si el factor del comentario es 0 o está mal formado, el artículo queda **sin precio** (la línea se bloquea). En Almacen esos casos dan error o NULL. Se le informó al responsable; puede pedir usar el precio sin dividir.
-- **Validación de líneas (T1.6):** además de R3.5 se agregaron, informando al responsable: máximo **2 decimales** en unidades decimales (la base usa `Numeric(12,2)`) y la **partida debe ser del mismo año** que la fecha requerida.
+- **Validación de líneas (T1.6):** además de R3.5 se agregaron, informando al responsable: máximo **2 decimales** en unidades decimales (la base usa `Numeric(12,2)`) y la **partida debe ser del mismo año** que la fecha requerida. Una cantidad `NaN` o `Infinity` también es error (lo encontró M1).
+- **Códigos:** solo dígitos ASCII (`[0-9]`, nunca `\d`, que acepta dígitos de otros alfabetos).
+- **Mutación (M1):** umbral del **80 %** de mutantes eliminados, acordado con el responsable. Se corre en **WSL** (el responsable instaló Ubuntu; usuario `stecnologia`).
 
 ## 4. Softland (solo lectura)
 
@@ -107,7 +117,11 @@ uv run ruff check . && uv run ruff format --check .
 uv run mypy                               # estricto: src, herramientas, tests
 uv export --frozen --no-emit-project -o reports/requisitos-auditoria.txt
 uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict
+uv sync --group propiedad && uv run pytest -m propiedad   # P1 a P6 (opcionales)
+wsl -d Ubuntu -- bash herramientas/mutacion.sh       # M1, umbral 80 %, solo en WSL
 ```
+
+Las pruebas de propiedad importan Hypothesis dentro de la prueba; CI instala el grupo `propiedad` para mypy y pip-audit (`uv export ... --group propiedad`).
 
 Verificación completa antes de cada commit: ruff, formato, mypy, la suite con cobertura y la auditoría. Antes de subir, buscar secretos en los archivos cambiados (IP internas, `PWD=`, tokens `sq*_`/`gh*_`).
 
@@ -139,9 +153,14 @@ Verificación completa antes de cada commit: ruff, formato, mypy, la suite con c
 - **ruff RUF001/002/003** rechaza `×`, `–` y `−` en textos, docstrings y comentarios. Usar `/`, "a" o `-`.
 - **openpyxl** no está en las dependencias todavía (llega con `web/`). Para inspeccionar el Excel real en local: `uv run --with openpyxl python -I script.py`, con el script en el scratchpad, sin imprimir montos y sin copiar datos al repositorio. El Excel real está en `C:\Users\stecnologia\Downloads\Presupuestos Compras.xlsx`. La consola muestra `�` en las tildes, pero los datos están bien.
 - **Esperar el workflow de un PR:** `Monitor` con un bucle sobre `gh run list --branch <rama> --json status,conclusion` y luego `gh run view <id> --log | grep "QUALITY GATE"`.
+- **WSL desde Claude Code:** `wsl -d Ubuntu -- bash -c '...'` desde PowerShell parte el comando por espacios. Escribir un script `.sh` en el scratchpad y lanzarlo con `Start-Process wsl.exe -ArgumentList '-d','Ubuntu','--','bash','"/mnt/c/..."'` y tiempo límite. Si Ubuntu no responde ni a `id`, falta la configuración inicial del usuario.
+- **mutmut 3:** no corre en Windows; en `/mnt/c` falla al copiar fechas, por eso `herramientas/mutacion.sh` copia el proyecto a `~/crm-compras-mutacion`. Muta el paquete completo con `do_not_mutate` fuera de `dominio/`, porque `tests/conftest.py` importa la app. uv en WSL: `~/.local/bin/uv`. Las pruebas de propiedad no corren bajo mutmut.
+- **ruff format** convierte los escapes `\uXXXX` en el carácter literal, y RUF001 lo rechaza: generar esos textos con `chr()`.
+- **SonarCloud y uv en scripts:** `uv sync` o `uv run` sin `--no-build` en un `.sh` es una vulnerabilidad nueva ("Omitting --no-build…") y tumba el Quality Gate de seguridad. En scripts usar `uv sync --frozen --no-build` y `uv run --no-sync --no-build`.
+- **Ver por qué falla el Quality Gate:** `Invoke-RestMethod "https://sonarcloud.io/api/qualitygates/project_status?projectKey=clickcultivossayonara_CRM-Compras&pullRequest=<n>"` (el proyecto es público).
 
 ## 10. Pendientes
 
-- **T1.7 en adelante** (fase 1 del dominio): T1.7 máquina de estados (+ P5 opcional), T1.8 cargador (+ P6 opcional), T1.9 P4 del calendario (opcional) y T1.10 mutación (M1). Ver `docs/spec/tareas.md`.
+- **PostgreSQL en WSL** y luego **fase 2** (T2.1 a T2.4). Ver `docs/spec/tareas.md`.
 - **E4:** versión de Softland y si permite importación automática (fuera del MVP).
-- Las pruebas adicionales que esperan su tarea: I2 (T4.4), C1 y X1 (T3.2), C2 (T4.6), S1 (T2.3), R1 (T4.1 y T4.4), M1 (T1.10), y E1, A1 y S3 (fase 5).
+- Las pruebas adicionales que esperan su tarea: I2 (T4.4), C1 y X1 (T3.2), C2 (T4.6), S1 (T2.3), R1 (T4.1 y T4.4), y E1, A1 y S3 (fase 5). M1 ya está hecha (T1.10).
