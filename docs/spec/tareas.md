@@ -65,3 +65,6 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 - [x] **E3** Unidades con decimales: KL, CC, MT, GR, GL, LB, LT. Solo enteros: UND, PAR, RLL y cualquier otra unidad. → R6.7
 - [x] **E5** Servidor MCP `softland-lectura` (desarrollo) en `herramientas/mcp_softland`, registrado en `.mcp.json`. → R6.2
 - [ ] **E4** Versión de Softland y opción de importación automática (fuera del MVP).
+
+## Trabajo futuro (después de la fase 5)
+- [ ] **F1** Diagrama interactivo de la arquitectura con [Archify](https://github.com/tt-a1i/archify) (skill para agentes, Apache-2.0): web y API en la nube, sincronizador local, Softland de solo lectura, PostgreSQL y el flujo de pedidos. Antes de instalar la skill, revisar su código y fijar la versión. El diagrama no debe incluir datos reales, IP ni credenciales (D20).

@@ -163,4 +163,5 @@ Verificación completa antes de cada commit: ruff, formato, mypy, la suite con c
 
 - **PostgreSQL en WSL** y luego **fase 2** (T2.1 a T2.4). Ver `docs/spec/tareas.md`.
 - **E4:** versión de Softland y si permite importación automática (fuera del MVP).
+- **F1, trabajo futuro (al terminar las 5 fases, pedido por el responsable):** diagrama interactivo de la arquitectura con **Archify** (`https://github.com/tt-a1i/archify`, skill para agentes, Apache-2.0). Revisar su código y fijar la versión antes de instalarla; sin datos reales, IP ni credenciales en el diagrama. Ver `tareas.md` → "Trabajo futuro". No adelantarlo antes de cerrar la fase 5.
 - Las pruebas adicionales que esperan su tarea: I2 (T4.4), C1 y X1 (T3.2), C2 (T4.6), S1 (T2.3), R1 (T4.1 y T4.4), y E1, A1 y S3 (fase 5). M1 ya está hecha (T1.10).
