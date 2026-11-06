@@ -38,6 +38,11 @@ def test_semanas_de_agosto_a_diciembre_2025_coinciden_con_el_excel() -> None:
     assert conteo == [4, 4, 5, 4, 4]
 
 
+def test_mes_que_empieza_en_viernes_y_termina_en_jueves() -> None:
+    # Febrero de 2019: del viernes 1 al jueves 28; su última semana es la del 28.
+    assert semanas_del_mes(2019, 2) == [Semana(2019, n) for n in range(6, 10)]
+
+
 def test_octubre_2025_empieza_en_la_semana_40() -> None:
     assert semanas_del_mes(2025, 10) == [Semana(2025, n) for n in range(40, 45)]
 
@@ -71,3 +76,31 @@ def test_semana_inexistente_falla(semana: Semana) -> None:
 def test_mes_invalido_falla(mes: int) -> None:
     with pytest.raises(ValueError):
         semanas_del_mes(2025, mes)
+
+
+@pytest.mark.propiedad
+def test_p4_anios_de_52_o_53_semanas_y_cada_semana_en_un_solo_mes() -> None:
+    """P4: cada año ISO tiene 52 o 53 semanas, y cada semana pertenece a un solo mes."""
+    from hypothesis import given
+    from hypothesis import strategies as st
+
+    @given(
+        anio=st.integers(min_value=1901, max_value=2199),
+        fecha=st.dates(min_value=date(1901, 1, 7), max_value=date(2199, 12, 24)),
+    )
+    def propiedad(anio: int, fecha: date) -> None:
+        semanas_del_anio = [s for m in range(1, 13) for s in semanas_del_mes(anio, m)]
+        assert len(semanas_del_anio) in (52, 53)
+        assert semanas_del_anio == [Semana(anio, n) for n in range(1, len(semanas_del_anio) + 1)]
+
+        semana = semana_de(fecha)
+        mes = mes_de_semana(semana)
+        meses_que_la_tienen = [
+            (a, m)
+            for a in (mes.anio - 1, mes.anio, mes.anio + 1)
+            for m in range(1, 13)
+            if semana in semanas_del_mes(a, m)
+        ]
+        assert meses_que_la_tienen == [(mes.anio, mes.mes)]
+
+    propiedad()

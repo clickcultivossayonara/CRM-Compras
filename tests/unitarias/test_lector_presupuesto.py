@@ -106,6 +106,53 @@ def test_columnas_sin_mes_se_ignoran_con_advertencia() -> None:
     assert set(partida(lectura, POMPON).valores) == set(range(8, 13))
 
 
+def test_columna_sin_mes_despues_de_la_z() -> None:
+    hoja = hoja_ficticia()
+    hoja[POMPON - 1] += [None] * 20 + [5]  # Columna AA.
+    assert leer_presupuesto(hoja, 2025).advertencias[0].startswith("Las columnas AA tienen datos")
+
+
+def test_columna_sin_mes_en_la_primera_fila_de_datos() -> None:
+    hoja = hoja_ficticia()
+    hoja[5] = [None, *["PPTO"] * 5, "nota"]  # Fila 6, columna G.
+    assert leer_presupuesto(hoja, 2025).advertencias[0].startswith("Las columnas G tienen datos")
+
+
+def test_meses_desde_la_columna_c() -> None:
+    # Se inserta la columna B vacía; la fila de POMPON trae un dato en ella.
+    hoja = [[fila[0], None, *fila[1:]] if fila else fila for fila in hoja_ficticia()]
+    hoja[POMPON - 1][1] = 7
+    lectura = leer_presupuesto(hoja, 2025)
+    assert lectura.errores == []
+    assert lectura.semanas == {8: 4, 9: 4, 10: 5, 11: 4, 12: 4}
+    assert len(lectura.partidas) == 10
+    assert lectura.advertencias[0].startswith("Las columnas B tienen datos")
+
+
+def test_partida_en_la_fila_siguiente_al_encabezado() -> None:
+    hoja = hoja_ficticia()
+    hoja[5] = ["CAL", *[50] * 5]  # Fila 6, en lugar de "PPTO".
+    assert ("CAL", AREA_GENERAL) in claves(leer_presupuesto(hoja, 2025))
+
+
+def test_area_en_la_ultima_fila_de_la_hoja() -> None:
+    hoja = hoja_ficticia()
+    hoja[19] = ["POLIETILENO", *formula("=+{c}22")]
+    hoja[21] = ["LA UNION", *[300] * 5]  # Fila 22, la última.
+    lectura = leer_presupuesto(hoja, 2025)
+    assert lectura.errores == []
+    assert ("POLIETILENO", "LA UNION") in claves(lectura)
+
+
+def test_formula_que_vuelve_a_su_rubro_no_entra_en_ciclo() -> None:
+    hoja = hoja_ficticia()
+    # CULTIVOS (CAMPO) también suma la fila de HERRAMIENTAS, que la contiene.
+    hoja[16] = ["CULTIVOS (CAMPO)", *formula("=+SUM({c}18:{c}19)+{c}15")]
+    lectura = leer_presupuesto(hoja, 2025)
+    assert lectura.errores == []
+    assert ("HERRAMIENTAS", "CULTIVOS (CAMPO) - LA CEJA") in claves(lectura)
+
+
 @pytest.mark.parametrize(
     ("valor", "esperado"),
     [
@@ -224,7 +271,8 @@ def test_sin_total_general_cada_formula_raiz_es_rubro() -> None:
     lectura = leer_presupuesto(hoja, 2025)
     assert lectura.errores == []
     assert ("ABONOS Y FERTILIZANTES", "LA CEJA") in claves(lectura)
-    assert ("POLIETILENO", AREA_GENERAL) in claves(lectura)
+    assert partida(lectura, 20).rubro == "POLIETILENO"
+    assert partida(lectura, 21).rubro == "PAPELERÍA"
 
 
 def test_referencias_absolutas_y_filas_fuera_de_la_hoja() -> None:

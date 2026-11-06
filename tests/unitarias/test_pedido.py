@@ -147,6 +147,13 @@ def test_cantidad_cero_o_negativa(cantidad: str) -> None:
     assert resultado.valor is None
 
 
+@pytest.mark.parametrize("cantidad", ["NaN", "Infinity", "-Infinity"])
+def test_cantidad_que_no_es_un_numero_finito(cantidad: str) -> None:
+    resultado = validar_linea(linea(cantidad=Decimal(cantidad)), contexto())
+    assert resultado.errores == ["La cantidad no es un número válido."]
+    assert resultado.valor is None
+
+
 @pytest.mark.parametrize(("cantidad", "valor"), [("1", 2000), ("0.01", 20), ("2.50", 5000)])
 def test_cantidad_en_unidad_decimal(cantidad: str, valor: int) -> None:
     resultado = validar_linea(linea(articulo="000001", cantidad=Decimal(cantidad)), contexto())

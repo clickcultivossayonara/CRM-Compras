@@ -93,6 +93,13 @@ def test_gerente_no_aprueba_sin_justificacion(justificacion: str) -> None:
         aprobar(Estado.PENDIENTE_GERENCIA, Rol.GERENTE, justificacion)
 
 
+def test_gerente_no_aprueba_si_no_pasa_justificacion() -> None:
+    with pytest.raises(
+        ValueError, match=r"^Aprobar un pedido que excede el presupuesto exige una justificación.$"
+    ):
+        aprobar(Estado.PENDIENTE_GERENCIA, Rol.GERENTE)
+
+
 def test_comprador_aprueba_lo_enviado() -> None:
     assert aprobar(Estado.ENVIADO, Rol.COMPRADOR) is Estado.APROBADO
 
@@ -173,7 +180,9 @@ def test_exportar_solo_lo_aprobado() -> None:
     exportado = exportar(Estado.APROBADO)
     assert exportado is Estado.EXPORTADO
     assert compromete_presupuesto(exportado)
-    with pytest.raises(TransicionInvalida):
+    with pytest.raises(
+        TransicionInvalida, match="Solo se exportan pedidos aprobados, no en enviado"
+    ):
         exportar(Estado.ENVIADO)
 
 

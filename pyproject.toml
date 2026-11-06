@@ -25,6 +25,10 @@ propiedad = [
 softland = [
     "pyodbc>=5.1",
 ]
+# Pruebas de mutación (M1): solo corren en Linux o WSL, con `uv sync --group mutacion`.
+mutacion = [
+    "mutmut>=3.8",
+]
 
 [tool.uv]
 # pyodbc se instala siempre para el tipado; solo se importa al conectar a Softland.
@@ -53,6 +57,12 @@ markers = [
     "autorizacion: matriz de permisos por rol (S1)",
     "rendimiento: tiempos de respuesta (R1)",
 ]
+
+[tool.mutmut]
+# Se copia el paquete completo porque tests/conftest.py importa la app; solo se muta dominio/.
+source_paths = ["src/crm_compras/"]
+do_not_mutate = ["src/crm_compras/__init__.py", "src/crm_compras/datos/*", "src/crm_compras/web/*"]
+pytest_add_cli_args_test_selection = ["tests/unitarias/"]
 
 [tool.coverage.run]
 source = ["crm_compras", "mcp_softland"]

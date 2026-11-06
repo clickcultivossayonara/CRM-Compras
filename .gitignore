@@ -12,3 +12,4 @@ reports/
 *.xlsx
 !tests/fixtures/*.xlsx
 .claude/settings.local.json
+mutants/

@@ -58,6 +58,11 @@ def test_linea_contra_el_disponible(valor: int, esperado: bool) -> None:
     assert cabe([100] * 4, [0] * 4, [(2, valor)]) is esperado
 
 
+@pytest.mark.parametrize(("valor", "esperado"), [(100, True), (101, False)])
+def test_linea_en_la_primera_semana_del_anio(valor: int, esperado: bool) -> None:
+    assert cabe([100] * 4, [0] * 4, [(0, valor)]) is esperado
+
+
 def test_disponible_cero_no_admite_una_linea_de_1() -> None:
     asignado = [100, 0]
     consumido = [100, 0]
@@ -105,9 +110,9 @@ def test_semanas_distintas_entre_asignado_y_consumido_es_error() -> None:
         saldos([100] * 4, [0] * 5)
 
 
-@pytest.mark.parametrize("semana", [-1, 4])
-def test_linea_fuera_del_anio_es_error(semana: int) -> None:
-    with pytest.raises(ValueError, match="fuera del año"):
+@pytest.mark.parametrize(("semana", "mensaje"), [(-1, "La semana 0"), (4, "La semana 5")])
+def test_linea_fuera_del_anio_es_error(semana: int, mensaje: str) -> None:
+    with pytest.raises(ValueError, match=f"^{mensaje} está fuera del año"):
         cabe([100] * 4, [0] * 4, [(semana, 1)])
 
 
