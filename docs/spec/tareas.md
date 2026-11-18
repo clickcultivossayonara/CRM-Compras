@@ -32,7 +32,7 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 - [x] **T2.2** Auditoría solo de inserción, con un permiso de base de datos que impide UPDATE y DELETE. → R1.9, R4.5, R6.6
 - [x] **T2.3** Inicio de sesión, hash argon2, roles, CSRF y protección de rutas por rol. → R6.1, R2.5
   - [x] **T2.3s** S1: matriz de autorización (ruta × rol) declarativa y parametrizada; crece con cada ruta nueva. → R2.5, R6.1
-- [ ] **T2.4** Administración: usuarios, asignación de partidas y centros a cada jefe, y unidades con decimales. → R1.10, R6.7
+- [x] **T2.4** Administración: usuarios, asignación de partidas y centros a cada jefe, y unidades con decimales. → R1.10, R6.7
 
 ## Fase 3 — Sincronización
 - [ ] **T3.1** Endpoints `/sync/*` con token, reemplazo idempotente e inactivación sin borrado. → R6.2, R6.3

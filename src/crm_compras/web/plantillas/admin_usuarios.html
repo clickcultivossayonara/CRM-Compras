@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios · CRM Compras{% endblock %}
+{% block contenido %}
+<p><a href="/">Inicio</a> · <a href="/admin/unidades">Unidades con decimales</a></p>
+<h1>Usuarios</h1>
+{% include "_errores.html" %}
+<table>
+  <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th></tr></thead>
+  <tbody>
+    {% for u in usuarios %}
+    <tr>
+      <td><a href="/admin/usuarios/{{ u.id }}">{{ u.usuario }}</a></td>
+      <td>{{ u.nombre }}</td>
+      <td>{{ u.rol }}</td>
+      <td>{{ "activo" if u.activo else "inactivo" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Nuevo usuario</h2>
+<form method="post" action="/admin/usuarios">
+  <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
+  <label for="usuario">Usuario</label>
+  <input id="usuario" name="usuario" maxlength="50" required>
+  <label for="nombre">Nombre</label>
+  <input id="nombre" name="nombre" maxlength="120" required>
+  <label for="rol">Rol</label>
+  <select id="rol" name="rol">
+    {% for rol in roles %}<option value="{{ rol }}">{{ rol }}</option>{% endfor %}
+  </select>
+  <label for="clave">Contraseña inicial (mínimo 12 caracteres)</label>
+  <input id="clave" name="clave" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+  <button type="submit">Crear</button>
+</form>
+{% endblock %}

@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from crm_compras.datos.auditoria import registrar
 from crm_compras.datos.conexion import url_sqlalchemy
 from crm_compras.datos.modelos import Auditoria
-from tests.integracion.conftest import url_pruebas
+from tests.base_pruebas import url_pruebas
 
 MENSAJE = "solo admite inserciones"
 

@@ -67,7 +67,12 @@ markers = [
 [tool.mutmut]
 # Se copia el paquete completo porque tests/conftest.py importa la app; solo se muta dominio/.
 source_paths = ["src/crm_compras/"]
-do_not_mutate = ["src/crm_compras/__init__.py", "src/crm_compras/datos/*", "src/crm_compras/web/*"]
+do_not_mutate = [
+    "src/crm_compras/__init__.py",
+    "src/crm_compras/crear_administrador.py",
+    "src/crm_compras/datos/*",
+    "src/crm_compras/web/*",
+]
 pytest_add_cli_args_test_selection = ["tests/unitarias/"]
 
 [tool.coverage.run]
@@ -78,6 +83,8 @@ branch = true
 fail_under = 80
 show_missing = true
 skip_covered = true
+# El arranque de un comando por terminal se prueba llamando a main() directamente.
+exclude_also = ['if __name__ == "__main__":']
 
 [tool.ruff]
 line-length = 100

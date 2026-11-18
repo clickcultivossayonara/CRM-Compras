@@ -18,6 +18,7 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 | Auditoría de dependencias (S2) | `uv export --frozen --no-emit-project -o reports/requisitos-auditoria.txt` y luego `uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict` | < 30 s |
 | Integración (I1) | `TEST_DATABASE_URL=postgresql://…@127.0.0.1:5432/crm_pruebas uv run pytest tests/integracion` | < 30 s |
 | Migraciones | `DATABASE_URL=postgresql://… uv run alembic upgrade head` (nueva: `uv run alembic revision --autogenerate -m "…"`) | — |
+| Primer administrador | `DATABASE_URL=postgresql://… uv run python -m crm_compras.crear_administrador <usuario> "<nombre>"` | — |
 | Softland real (X1, manual) | `uv run pytest -m softland` | — |
 | SonarCloud | `uv tool run pysonar` (después de la suite completa) | — |
 
