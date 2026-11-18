@@ -58,7 +58,7 @@ sincronizacion(id, tipo, recibido_en, registros)
 ```
 
 - El dinero siempre se guarda como `int`. La cantidad se guarda como `Numeric`, porque algunas unidades admiten decimales. (D2, D13)
-- `auditoria` no tiene permisos de UPDATE ni DELETE para el usuario de la aplicación. (D19)
+- `auditoria` solo admite inserciones (D19). Un trigger rechaza UPDATE, DELETE y TRUNCATE con `insufficient_privilege` para cualquier usuario, incluido el dueño de la tabla, porque un REVOKE no lo limita. También se revocan esos permisos a `PUBLIC`. Se escribe solo con `datos/auditoria.registrar`, en la misma transacción del cambio auditado.
 
 ## 4. Algoritmos
 
