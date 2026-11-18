@@ -30,8 +30,8 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 ## Fase 2 — Datos y sesión
 - [x] **T2.1** Modelos SQLAlchemy y migración inicial de [diseno.md §3](diseno.md#3-modelo-de-datos-base-propia). I1: migraciones y restricciones probadas contra PostgreSQL. → R1, R3, R5, R6.6
 - [x] **T2.2** Auditoría solo de inserción, con un permiso de base de datos que impide UPDATE y DELETE. → R1.9, R4.5, R6.6
-- [ ] **T2.3** Inicio de sesión, hash argon2, roles, CSRF y protección de rutas por rol. → R6.1, R2.5
-  - [ ] **T2.3s** S1: matriz de autorización (ruta × rol) declarativa y parametrizada; crece con cada ruta nueva. → R2.5, R6.1
+- [x] **T2.3** Inicio de sesión, hash argon2, roles, CSRF y protección de rutas por rol. → R6.1, R2.5
+  - [x] **T2.3s** S1: matriz de autorización (ruta × rol) declarativa y parametrizada; crece con cada ruta nueva. → R2.5, R6.1
 - [ ] **T2.4** Administración: usuarios, asignación de partidas y centros a cada jefe, y unidades con decimales. → R1.10, R6.7
 
 ## Fase 3 — Sincronización
