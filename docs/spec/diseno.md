@@ -127,6 +127,10 @@ Cualquier otra transición genera `TransicionInvalida`.
 ## 7. Seguridad
 - Secretos por variables de entorno: `DATABASE_URL`, `SECRET_KEY`, `SYNC_TOKEN`, `SOFTLAND_SERVIDOR`, `SOFTLAND_BASE`, `SOFTLAND_USUARIO`, `SOFTLAND_CLAVE`.
 - Formularios con protección CSRF. Cookies `HttpOnly`, `Secure` y `SameSite=Lax`.
+- Sesión (T2.3): cookie firmada `crm_sesion` con `SECRET_KEY` (mínimo 32 caracteres), vence a las 8 horas y guarda solo el id del usuario; el usuario se relee en cada petición, así que una baja o un cambio de rol aplican de inmediato. Contraseñas con argon2id; si el usuario no existe se verifica contra un hash de relleno y el mensaje es el mismo para usuario inexistente, clave errada o inactivo.
+- CSRF: token en la sesión, renovado al iniciar sesión; todo POST del router web lo exige en el campo `csrf_token` o en el encabezado `X-CSRF-Token` (HTMX).
+- Rutas: `requiere_roles(...)` en cada una. Sin sesión → 303 al login; rol sin permiso → 403. La matriz S1 de las pruebas declara los roles de cada ruta y falla si aparece una ruta sin declarar.
+- La app se arranca con `uvicorn --factory crm_compras.web.app:crear_app`: la configuración se lee al crear la app, no al importar. `CRM_COOKIES_SEGURAS=0` solo para pruebas locales por HTTP.
 - El usuario de SQL Server disponible es el mismo de Almacen y tiene permisos de **sysadmin** (decisión del responsable: no se crea otro). Por eso la solo lectura se garantiza en el código: solo `SELECT` fijos con parámetros, filtro que rechaza instrucciones de escritura, `ROLLBACK` al terminar y `READ UNCOMMITTED` para no bloquear el ERP.
 - Tablas confirmadas en Softland: `SAYONARA.ARTICULO` (`ACTIVO` = `S`/`N`, `UNIDAD_ALMACEN`), `SAYONARA.CENTRO_COSTO` (`CENTRO_COSTO`, `DESCRIPCION`, `ACEPTA_DATOS`), `SAYONARA.BODEGA` y `SAYONARA.ORDEN_COMPRA_LINEA` (incluye `CENTRO_COSTO`, útil para sugerir partidas).
 

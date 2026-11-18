@@ -148,7 +148,7 @@ Abreviaturas: **PE** = partición de equivalencia · **VL** = valor límite · *
 ### 3.9 Humo (crece con cada fase)
 - [x] La app arranca como proceso y `/salud` responde.
 - [x] `/openapi.json` carga.
-- [ ] Inicio de sesión (T2.3).
+- [x] Inicio de sesión (T2.3), con PostgreSQL.
 - [ ] Vista previa de la carga de presupuesto (T4.1).
 - [ ] Crear y enviar un pedido (T4.4).
 - [ ] Aprobar un pedido (T4.5).

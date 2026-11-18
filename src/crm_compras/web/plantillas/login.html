@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Ingresar · CRM Compras{% endblock %}
+{% block contenido %}
+<h1>Ingresar</h1>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+<form method="post" action="/login">
+  <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
+  <label for="usuario">Usuario</label>
+  <input id="usuario" name="usuario" autocomplete="username" maxlength="128" required>
+  <label for="clave">Contraseña</label>
+  <input id="clave" name="clave" type="password" autocomplete="current-password" maxlength="128" required>
+  <button type="submit">Ingresar</button>
+</form>
+{% endblock %}
