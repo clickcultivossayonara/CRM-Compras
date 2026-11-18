@@ -2,6 +2,11 @@
 {% block contenido %}
 <h1>CRM Compras</h1>
 <p>Hola, {{ usuario.nombre }} ({{ usuario.rol.value }}).</p>
+{% if usuario.rol.value == "administrador" %}
+<nav>
+  <a href="/admin/usuarios">Usuarios</a> · <a href="/admin/unidades">Unidades con decimales</a>
+</nav>
+{% endif %}
 <form method="post" action="/salir">
   <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
   <button type="submit">Salir</button>

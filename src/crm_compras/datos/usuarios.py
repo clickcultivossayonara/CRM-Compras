@@ -3,10 +3,9 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-from sqlalchemy import Engine, create_engine, select
-from sqlalchemy.orm import Session
+from sqlalchemy import select
 
-from crm_compras.datos.conexion import url_desde_entorno, url_sqlalchemy
+from crm_compras.datos.conexion import BaseDatos
 from crm_compras.datos.modelos import Usuario
 from crm_compras.dominio.pedido import Rol
 
@@ -27,7 +26,7 @@ class RepositorioUsuarios(Protocol):
     def por_id(self, usuario_id: int) -> UsuarioSesion | None: ...
 
 
-def _a_sesion(fila: Usuario) -> UsuarioSesion:
+def a_sesion(fila: Usuario) -> UsuarioSesion:
     return UsuarioSesion(
         id=fila.id,
         usuario=fila.usuario,
@@ -39,24 +38,17 @@ def _a_sesion(fila: Usuario) -> UsuarioSesion:
 
 
 class RepositorioUsuariosSQL:
-    """Lee usuarios de la base propia. El motor se crea al primer uso, no al importar."""
+    """Lee usuarios de la base propia."""
 
-    def __init__(self, url: str | None = None) -> None:
-        self._url = url
-        self._motor: Engine | None = None
-
-    def _abrir(self) -> Session:
-        if self._motor is None:
-            url = url_sqlalchemy(self._url) if self._url else url_desde_entorno()
-            self._motor = create_engine(url, pool_pre_ping=True)
-        return Session(self._motor)
+    def __init__(self, base: BaseDatos) -> None:
+        self._base = base
 
     def por_usuario(self, usuario: str) -> UsuarioSesion | None:
-        with self._abrir() as sesion:
+        with self._base.sesion() as sesion:
             fila = sesion.scalars(select(Usuario).where(Usuario.usuario == usuario)).first()
-            return _a_sesion(fila) if fila else None
+            return a_sesion(fila) if fila else None
 
     def por_id(self, usuario_id: int) -> UsuarioSesion | None:
-        with self._abrir() as sesion:
+        with self._base.sesion() as sesion:
             fila = sesion.get(Usuario, usuario_id)
-            return _a_sesion(fila) if fila else None
+            return a_sesion(fila) if fila else None

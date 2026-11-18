@@ -2,9 +2,10 @@
 
 import psycopg
 
+from crm_compras.datos.conexion import BaseDatos
 from crm_compras.datos.usuarios import RepositorioUsuariosSQL
 from crm_compras.dominio.pedido import Rol
-from tests.integracion.conftest import url_pruebas
+from tests.base_pruebas import url_pruebas
 
 
 def test_busca_usuarios_por_nombre_y_por_id(conexion: psycopg.Connection) -> None:
@@ -15,7 +16,7 @@ def test_busca_usuarios_por_nombre_y_por_id(conexion: psycopg.Connection) -> Non
     assert fila is not None
     conexion.commit()
     try:
-        repositorio = RepositorioUsuariosSQL(url_pruebas())
+        repositorio = RepositorioUsuariosSQL(BaseDatos(url_pruebas()))
         por_nombre = repositorio.por_usuario("gerente.sql")
         assert por_nombre is not None
         assert (por_nombre.nombre, por_nombre.rol, por_nombre.activo) == (

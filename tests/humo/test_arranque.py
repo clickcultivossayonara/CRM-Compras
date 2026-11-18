@@ -18,8 +18,8 @@ import pytest
 from alembic import command
 
 from crm_compras.web.seguridad import cifrar_clave
+from tests.base_pruebas import SEGUNDOS_CONEXION, configuracion_alembic
 from tests.fabricas import clave_aleatoria
-from tests.integracion.conftest import SEGUNDOS_CONEXION, configuracion_alembic
 
 USUARIO_HUMO = "humo.administrador"
 

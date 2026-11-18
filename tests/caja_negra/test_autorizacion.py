@@ -14,7 +14,7 @@ from starlette.routing import Route
 from crm_compras.dominio.pedido import Rol
 from crm_compras.web.app import crear_app
 from crm_compras.web.configuracion import Configuracion
-from tests.conftest import Entrar
+from tests.conftest import Cuenta, Entrar, csrf_de
 from tests.fabricas import RepositorioUsuariosMemoria
 
 pytestmark = pytest.mark.autorizacion
@@ -33,9 +33,20 @@ PUBLICAS = {
     ("GET", "/redoc"),
 }
 
+ADMINISTRADOR = frozenset({Rol.ADMINISTRADOR})
+
 # Rutas con sesión y los roles que pueden usarlas.
 MATRIZ: dict[tuple[str, str], frozenset[Rol]] = {
     ("GET", "/"): TODOS,
+    ("GET", "/admin/usuarios"): ADMINISTRADOR,
+    ("POST", "/admin/usuarios"): ADMINISTRADOR,
+    ("GET", "/admin/usuarios/{usuario_id}"): ADMINISTRADOR,
+    ("POST", "/admin/usuarios/{usuario_id}"): ADMINISTRADOR,
+    ("POST", "/admin/usuarios/{usuario_id}/clave"): ADMINISTRADOR,
+    ("POST", "/admin/usuarios/{usuario_id}/asignaciones"): ADMINISTRADOR,
+    ("GET", "/admin/unidades"): ADMINISTRADOR,
+    ("POST", "/admin/unidades"): ADMINISTRADOR,
+    ("POST", "/admin/unidades/{unidad}/quitar"): ADMINISTRADOR,
 }
 
 
@@ -67,25 +78,73 @@ def test_la_matriz_no_tiene_rutas_que_ya_no_existen() -> None:
     assert (PUBLICAS | set(MATRIZ)) <= rutas_de_la_app()
 
 
+def concreta(ruta: str, cuentas: dict[str, Cuenta]) -> str:
+    """Ruta con valores reales en sus parámetros: un usuario que existe y una unidad de la lista."""
+    return ruta.format(usuario_id=cuentas["jefe"][0].id, unidad="KL")
+
+
 CASOS_GET = [
     (ruta, rol, rol in roles)
     for (metodo, ruta), roles in MATRIZ.items()
     if metodo == "GET"
     for rol in Rol
 ]
+CASOS_POST_PROHIBIDOS = [
+    (ruta, rol)
+    for (metodo, ruta), roles in MATRIZ.items()
+    if metodo == "POST"
+    for rol in Rol
+    if rol not in roles
+]
 
 
 @pytest.mark.parametrize(("ruta", "rol", "permitido"), CASOS_GET)
 def test_cada_rol_en_cada_ruta(
-    cliente: httpx2.Client, entrar: Entrar, ruta: str, rol: Rol, permitido: bool
+    cliente_bd: httpx2.Client,
+    entrar_bd: Entrar,
+    cuentas_bd: dict[str, Cuenta],
+    ruta: str,
+    rol: Rol,
+    permitido: bool,
 ) -> None:
-    entrar(cliente, rol.value)
-    respuesta = cliente.get(ruta, follow_redirects=False)
+    entrar_bd(cliente_bd, rol.value)
+    respuesta = cliente_bd.get(concreta(ruta, cuentas_bd), follow_redirects=False)
     assert respuesta.status_code == (200 if permitido else 403)
 
 
+@pytest.mark.parametrize(("ruta", "rol"), CASOS_POST_PROHIBIDOS)
+def test_un_rol_sin_permiso_no_cambia_nada_aunque_traiga_csrf(
+    cliente_bd: httpx2.Client,
+    entrar_bd: Entrar,
+    cuentas_bd: dict[str, Cuenta],
+    ruta: str,
+    rol: Rol,
+) -> None:
+    entrar_bd(cliente_bd, rol.value)
+    token = csrf_de(cliente_bd.get("/").text)
+    respuesta = cliente_bd.post(
+        concreta(ruta, cuentas_bd), data={"csrf_token": token}, follow_redirects=False
+    )
+    assert respuesta.status_code == 403
+
+
 @pytest.mark.parametrize("ruta", [ruta for metodo, ruta in MATRIZ if metodo == "GET"])
-def test_sin_sesion_cada_ruta_redirige_al_login(cliente: httpx2.Client, ruta: str) -> None:
-    respuesta = cliente.get(ruta, follow_redirects=False)
+def test_sin_sesion_cada_ruta_redirige_al_login(
+    cliente_bd: httpx2.Client, cuentas_bd: dict[str, Cuenta], ruta: str
+) -> None:
+    respuesta = cliente_bd.get(concreta(ruta, cuentas_bd), follow_redirects=False)
     assert respuesta.status_code == 303
     assert respuesta.headers["location"] == "/login"
+
+
+@pytest.mark.parametrize("ruta", [ruta for metodo, ruta in MATRIZ if metodo == "POST"])
+def test_sin_sesion_ningun_post_pasa(
+    cliente_bd: httpx2.Client, cuentas_bd: dict[str, Cuenta], ruta: str
+) -> None:
+    token = csrf_de(cliente_bd.get("/login").text)
+    respuesta = cliente_bd.post(
+        concreta(ruta, cuentas_bd), data={"csrf_token": token}, follow_redirects=False
+    )
+    assert respuesta.status_code in (303, 422)
+    if respuesta.status_code == 303:
+        assert respuesta.headers["location"] == "/login"

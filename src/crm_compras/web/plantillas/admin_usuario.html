@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}{{ usuario.usuario }} · CRM Compras{% endblock %}
+{% block contenido %}
+<p><a href="/admin/usuarios">Usuarios</a></p>
+<h1>{{ usuario.usuario }}</h1>
+{% include "_errores.html" %}
+
+<h2>Datos</h2>
+<form method="post" action="/admin/usuarios/{{ usuario.id }}">
+  <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
+  <label for="nombre">Nombre</label>
+  <input id="nombre" name="nombre" value="{{ usuario.nombre }}" maxlength="120" required>
+  <label for="rol">Rol</label>
+  <select id="rol" name="rol">
+    {% for rol in roles %}<option value="{{ rol }}" {{ "selected" if rol == usuario.rol }}>{{ rol }}</option>{% endfor %}
+  </select>
+  <label><input type="checkbox" name="activo" value="true" {{ "checked" if usuario.activo }}> Activo</label>
+  <button type="submit">Guardar</button>
+</form>
+
+<h2>Restablecer contraseña</h2>
+<form method="post" action="/admin/usuarios/{{ usuario.id }}/clave">
+  <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
+  <label for="clave">Nueva contraseña (mínimo 12 caracteres)</label>
+  <input id="clave" name="clave" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+  <button type="submit">Cambiar</button>
+</form>
+
+{% if usuario.rol == "jefe" %}
+<h2>Partidas y centros de costo</h2>
+<form method="post" action="/admin/usuarios/{{ usuario.id }}/asignaciones">
+  <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
+  <fieldset>
+    <legend>Partidas</legend>
+    {% for p in partidas %}
+    <label><input type="checkbox" name="partidas" value="{{ p.id }}" {{ "checked" if p.id in partidas_asignadas }}> {{ p.anio }} · {{ p.rubro }} / {{ p.area }}</label>
+    {% else %}<p>Aún no hay presupuesto cargado.</p>{% endfor %}
+  </fieldset>
+  <fieldset>
+    <legend>Centros de costo</legend>
+    {% for c in centros %}
+    <label><input type="checkbox" name="centros" value="{{ c.codigo }}" {{ "checked" if c.codigo in centros_asignados }}> {{ c.codigo }} · {{ c.descripcion }}</label>
+    {% else %}<p>Aún no hay centros de costo sincronizados desde Softland.</p>{% endfor %}
+  </fieldset>
+  <button type="submit">Guardar asignaciones</button>
+</form>
+{% endif %}
+{% endblock %}

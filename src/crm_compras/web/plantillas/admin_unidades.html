@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Unidades con decimales · CRM Compras{% endblock %}
+{% block contenido %}
+<p><a href="/">Inicio</a> · <a href="/admin/usuarios">Usuarios</a></p>
+<h1>Unidades con decimales</h1>
+<p>Las demás unidades solo admiten cantidades enteras.</p>
+{% include "_errores.html" %}
+<ul>
+  {% for unidad in unidades %}
+  <li>
+    {{ unidad }}
+    <form method="post" action="/admin/unidades/{{ unidad }}/quitar">
+      <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
+      <button type="submit">Quitar</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+<form method="post" action="/admin/unidades">
+  <input type="hidden" name="{{ campo_csrf }}" value="{{ csrf }}">
+  <label for="unidad">Unidad (como en Softland)</label>
+  <input id="unidad" name="unidad" maxlength="10" required>
+  <button type="submit">Agregar</button>
+</form>
+{% endblock %}
