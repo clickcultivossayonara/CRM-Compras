@@ -16,7 +16,8 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 | Linter y formato | `uv run ruff check . && uv run ruff format --check .` | — |
 | Tipos | `uv run mypy` | — |
 | Auditoría de dependencias (S2) | `uv export --frozen --no-emit-project -o reports/requisitos-auditoria.txt` y luego `uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict` | < 30 s |
-| Integración (I1) | `TEST_DATABASE_URL=postgresql://… uv run pytest tests/integracion` | — |
+| Integración (I1) | `TEST_DATABASE_URL=postgresql://…@127.0.0.1:5432/crm_pruebas uv run pytest tests/integracion` | < 30 s |
+| Migraciones | `DATABASE_URL=postgresql://… uv run alembic upgrade head` (nueva: `uv run alembic revision --autogenerate -m "…"`) | — |
 | Softland real (X1, manual) | `uv run pytest -m softland` | — |
 | SonarCloud | `uv tool run pysonar` (después de la suite completa) | — |
 
@@ -24,6 +25,7 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 - Las pruebas de propiedad no se ejecutan por defecto (`-m 'not propiedad'`).
 - mutmut no corre en Windows. `herramientas/mutacion.sh` copia el proyecto a una carpeta de Linux, muta solo `dominio/` con las pruebas unitarias y falla si se elimina menos del 80 % de los mutantes (`UMBRAL_MUTACION`). Los sobrevivientes que quedan son textos de mensajes o cambios equivalentes.
 - La cobertura mínima local es del 80 % (`fail_under`). Si no se alcanza, la suite falla.
+- I1 en local usa PostgreSQL en WSL (Ubuntu). Desde Windows hay que usar `127.0.0.1`, no `localhost`: WSL no reenvía IPv6 y la conexión se queda esperando. Las pruebas llevan la base de pruebas a cero y la migran al iniciar; no apuntar `TEST_DATABASE_URL` a una base con datos.
 
 ## 2. Niveles
 
