@@ -28,6 +28,7 @@ _MARCAS = {
     "humo": "humo",
     "integracion": "integracion",
     "herramientas": "unitaria",
+    "sincronizador": "unitaria",
 }
 INACTIVO = "inactivo"
 _CSRF_EN_HTML = re.compile(r'name="csrf_token" value="([^"]+)"')

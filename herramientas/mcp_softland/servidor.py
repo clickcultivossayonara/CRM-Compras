@@ -8,9 +8,11 @@ from mcp.server.mcpserver import MCPServer
 from mcp.types import ToolAnnotations
 
 from mcp_softland import consultas
+from sincronizador.lectura import VARIABLES, cadena_conexion, conectar
+
+__all__ = ["VARIABLES", "cadena_conexion", "servidor"]
 
 SOLO_LECTURA = ToolAnnotations(read_only_hint=True, destructive_hint=False, idempotent_hint=True)
-VARIABLES = ("SOFTLAND_SERVIDOR", "SOFTLAND_USUARIO", "SOFTLAND_CLAVE")
 
 servidor: MCPServer = MCPServer(
     "softland-lectura",
@@ -18,27 +20,8 @@ servidor: MCPServer = MCPServer(
 )
 
 
-def cadena_conexion(entorno: dict[str, str]) -> str:
-    faltantes = [v for v in VARIABLES if not entorno.get(v)]
-    if faltantes:
-        raise RuntimeError(f"Faltan variables de entorno: {', '.join(faltantes)}")
-    driver = entorno.get("SOFTLAND_DRIVER", "ODBC Driver 17 for SQL Server")
-    return (
-        f"DRIVER={{{driver}}};SERVER={entorno['SOFTLAND_SERVIDOR']};"
-        f"DATABASE={entorno.get('SOFTLAND_BASE', 'SAYOERP')};"
-        f"UID={entorno['SOFTLAND_USUARIO']};PWD={entorno['SOFTLAND_CLAVE']};"
-        "ApplicationIntent=ReadOnly;"
-    )
-
-
 def _conectar() -> Any:  # pragma: no cover - requiere el servidor SQL real
-    import pyodbc  # solo al conectar: las pruebas no necesitan el driver
-
-    conexion = pyodbc.connect(
-        cadena_conexion(dict(os.environ)), timeout=10, autocommit=False, readonly=True
-    )
-    conexion.timeout = 15
-    return conexion
+    return conectar(dict(os.environ))
 
 
 def _con_conexion(funcion: Callable[..., Any], *args: Any) -> Any:

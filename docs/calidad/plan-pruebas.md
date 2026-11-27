@@ -19,7 +19,9 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 | Integración (I1) | `TEST_DATABASE_URL=postgresql://…@127.0.0.1:5432/crm_pruebas uv run pytest tests/integracion` | < 30 s |
 | Migraciones | `DATABASE_URL=postgresql://… uv run alembic upgrade head` (nueva: `uv run alembic revision --autogenerate -m "…"`) | — |
 | Primer administrador | `DATABASE_URL=postgresql://… uv run python -m crm_compras.crear_administrador <usuario> "<nombre>"` | — |
-| Softland real (X1, manual) | `uv run pytest -m softland` | — |
+| Softland real (X1, manual) | `uv run pytest -m softland` (con las variables `SOFTLAND_*`, desde la red de la empresa; solo lectura, no imprime datos) | < 30 s |
+| Contrato sincronizador-API (C1) | `uv run pytest -m contrato` (con `TEST_DATABASE_URL`) | — |
+| Sincronizador | `uv run python -m sincronizador` (con `SOFTLAND_*`, `CRM_URL_API` y `SYNC_TOKEN`) | — |
 | SonarCloud | `uv tool run pysonar` (después de la suite completa) | — |
 
 - Cada prueba recibe su marca según la carpeta (`tests/conftest.py`).
