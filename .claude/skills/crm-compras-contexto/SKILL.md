@@ -39,13 +39,29 @@ Las reglas del dominio y el stack están en `CLAUDE.md`, y la especificación en
 | T1.7 Máquina de estados (`enviar`, `aprobar`, `rechazar`, `anular`, `exportar`) + P5 | ✅ | PR #14 |
 | T1.8 Cargador (`cargador.armar_cargador`, `lineas_para_lote`) + P6 | ✅ | PR #15 |
 | T1.9 Propiedad P4 del calendario + T1.10 mutación M1 (97,6 %) | ✅ | PR #16 |
-| **Fase 1 (dominio) completa. Siguiente: fase 2** (ver `docs/spec/tareas.md`) | ⏭️ **siguiente** | — |
+| Skill: cierre de la fase 1 y Archify como trabajo futuro (F1) | ✅ | PR #17 |
+| T2.1 Modelos SQLAlchemy y migración inicial (Alembic) + I1 | ✅ | PR #18 |
+| T2.2 Auditoría solo de inserción (trigger) | ✅ | PR #19 |
+| T2.3 Sesión, argon2, CSRF, roles por ruta + S1 | ✅ | PR #20 |
+| T2.4 Administración (usuarios, asignaciones, unidades) + `crear_administrador` | ✅ | PR #21 |
+| T3.1 API del sincronizador `/sync/*` (token, upsert, inactivación) | ✅ | PR #22 |
+| **Siguiente: T3.2, sincronizador local** | ⏭️ **siguiente** | — |
 
-Los 16 PR están fusionados en `main` con el workflow y el Quality Gate en verde (228 pruebas en CI, cobertura del 100 %; SonarCloud en `main`: 0 bugs, 0 vulnerabilidades, 0 code smells, 0 % de duplicación).
+Los 21 PR están fusionados en `main` con el workflow y el Quality Gate en verde (396 pruebas en CI con PostgreSQL 16, cobertura del 100 %; mutación del dominio 97,7 %).
 
-**Próxima sesión (fase 2):**
-1. **Instalar PostgreSQL en WSL (Ubuntu)**, aprobado por el responsable, para correr en local las pruebas de integración (I1) con `TEST_DATABASE_URL`. Sin Docker. Requiere `sudo` dentro de Ubuntu: la contraseña de Linux la escribe el responsable, nunca se pide en el chat. Usar credenciales de prueba, solo en variables de entorno.
-2. **T2.1**: modelos SQLAlchemy y migración inicial de `diseno.md` §3, con I1. Después T2.2 (auditoría solo de inserción), T2.3 (sesión, argon2, roles, CSRF y S1) y T2.4 (administración).
+**Próxima sesión (fase 3, sincronización con Softland):**
+1. **T3.1 (hecha, PR #22)**: `POST /sync/{articulos|centros|precios}` con `Authorization: Bearer ${SYNC_TOKEN}`. Contrato Pydantic compartido en `crm_compras/contrato_sync.py` (`EnvioArticulos`, `EnvioCentros`, `EnvioPrecios`, `RespuestaSync`): **el sincronizador de T3.2 debe usarlo para armar sus envíos (C1)**. Artículos y centros con upsert e inactivación por `sincronizado_en < ahora`; precios se reemplazan (`inactivados` = retirados) y exigen que el artículo exista. Listas de códigos con `= ANY(:codigos)`. Rutas en S1 como `CON_TOKEN`. `SYNC_TOKEN` en `Configuracion.token_sync` (mínimo 32).
+2. **T3.2**: sincronizador local (`sincronizador/`) con `pyodbc`, consultas `SELECT` fijas tomadas de `C:\Apps\Almacen\app.py`, `precios.normalizar` y envío por HTTPS. Pruebas con un doble de Softland. C1 (contrato compartido) y X1 (manual contra Softland real).
+3. **T3.3**: fecha de la última sincronización en pantalla, con advertencia si pasaron más de 24 horas (R6.5).
+
+**Cómo quedó la capa de datos y la web (fase 2):**
+- `datos/conexion.BaseDatos(url=None, conexion=None)`: reparte sesiones con `.sesion()`; el motor se crea al primer uso desde `DATABASE_URL`. Con `conexion`, los `commit` son puntos de guardado (lo usan las pruebas).
+- `datos/modelos.py`: 16 tablas; dinero en `BIGINT`; restricciones con nombre (formatos de código, estados, roles, meses, semanas, bodegas, D15). Migraciones en `datos/migraciones/versions/`, Alembic configurado en `pyproject.toml` (sin `alembic.ini`): `uv run alembic upgrade head`, `uv run alembic revision --autogenerate -m "…"`. Las listas iniciales se escriben fijas en la migración, no importadas del dominio.
+- `datos/auditoria.registrar(sesion, usuario_id=, entidad=, entidad_id=, accion=, antes=, despues=)`: única forma de auditar; un trigger rechaza UPDATE, DELETE y TRUNCATE incluso al dueño de la tabla.
+- `datos/administracion.py`: operaciones de administración con `AdministracionError(problemas)` y `NoEncontrado`; reciben claves ya cifradas.
+- `web/app.crear_app(configuracion=None, usuarios=None, base=None)`; se arranca con `uvicorn --factory crm_compras.web.app:crear_app`. `web/seguridad`: `cifrar_clave`, `autenticar`, `verificar_csrf` (router), `requiere_roles(...)`, `SinSesion` → 303 al login. Plantillas Jinja2 en `web/plantillas/` (`_errores.html` para listar errores).
+- Rutas: `web/rutas_sesion.py` (login, salir, inicio) y `web/rutas_admin.py` (`/admin/...`). **Toda ruta nueva va en la matriz S1** (`tests/caja_negra/test_autorizacion.py`) o la prueba falla; la matriz lee las rutas del esquema OpenAPI, así que **ninguna ruta usa `include_in_schema=False`**.
+- Pruebas: `tests/base_pruebas.py` (URL, Alembic), fixtures en `tests/conftest.py`: `cliente`/`entrar` (app en memoria, sin base), `bd`, `cuentas_bd`, `cliente_bd`, `entrar_bd` (app sobre PostgreSQL en una transacción revertida; la auditoría no se puede borrar). Claves de prueba con `clave_aleatoria()`: el hook de secretos bloquea `clave="..."` de 4 o más caracteres.
 
 **Cómo quedó el dominio hecho (para usarlo en las tareas siguientes):**
 - `presupuesto`: las semanas de una partida van en listas; la posición *i* es la semana *i* + 1 del año ISO. `cabe(asignado, consumido, lineas)` recibe las líneas como pares `(posición de semana, valor)`, las suma por semana y responde si caben sin Gerencia.
@@ -77,6 +93,7 @@ Los 16 PR están fusionados en `main` con el workflow y el Quality Gate en verde
 - **Validación de líneas (T1.6):** además de R3.5 se agregaron, informando al responsable: máximo **2 decimales** en unidades decimales (la base usa `Numeric(12,2)`) y la **partida debe ser del mismo año** que la fecha requerida. Una cantidad `NaN` o `Infinity` también es error (lo encontró M1).
 - **Códigos:** solo dígitos ASCII (`[0-9]`, nunca `\d`, que acepta dígitos de otros alfabetos).
 - **Mutación (M1):** umbral del **80 %** de mutantes eliminados, acordado con el responsable. Se corre en **WSL** (el responsable instaló Ubuntu; usuario `stecnologia`).
+- **Administración (T2.4), decidido por defecto e informado:** los usuarios nunca se borran, solo se desactivan; un administrador no puede quitarse su rol ni desactivarse; contraseñas de 12 a 128 caracteres; solo a un Jefe se le asignan partidas y centros. La sesión dura 8 horas.
 
 ## 4. Softland (solo lectura)
 
@@ -105,6 +122,9 @@ Los 16 PR están fusionados en `main` con el workflow y el Quality Gate en verde
   `C:\Users\stecnologia\AppData\Local\Microsoft\WinGet\Packages\astral-sh.uv_Microsoft.Winget.Source_8wekyb3d8bbwe\uv.exe`
 - GitHub CLI: `C:\Program Files\GitHub CLI\gh.exe`. La sesión está iniciada con `clickcultivossayonara`, que es administrador del repositorio.
 - No hay Docker.
+- **PostgreSQL 18.6 en WSL (Ubuntu 26.04)**, instalado por el responsable; arranca solo con WSL (systemd). Base de pruebas `crm_pruebas`, usuario `pruebas` (mismas credenciales de prueba que CI). `TEST_DATABASE_URL` está guardada como variable de entorno del usuario de Windows, con `127.0.0.1`: **nunca `localhost`**, porque WSL no reenvía IPv6 y la conexión se queda colgada.
+- La contraseña de Linux (`sudo`) la escribe el responsable; si la olvida: `wsl -d Ubuntu -u root` y `passwd stecnologia`.
+- **WSL se apaga solo** unos segundos después del último comando, aunque PostgreSQL sea un servicio, y después de reiniciar el equipo no arranca hasta que algo lo llame. Si las pruebas con base se cuelgan o dan `ConnectionTimeout`: dejar en segundo plano `wsl.exe -d Ubuntu --exec sleep infinity` (Bash con `run_in_background`) o pedir al responsable que deje una ventana de Ubuntu abierta, y comprobar con `systemctl is-active postgresql`.
 - Las variables de entorno nuevas solo se ven después de **cerrar VS Code por completo** (Ctrl + Q), no con "Reload Window".
 
 ## 6. Comandos
@@ -129,7 +149,7 @@ Verificación completa antes de cada commit: ruff, formato, mypy, la suite con c
 
 - Workflow `.github/workflows/calidad.yml`: corre en cada push a `main` y en cada PR. Pasos: linter, tipos, pip-audit, humo, suite con PostgreSQL 16 como servicio, y SonarCloud con `uv tool run pysonar`.
 - SonarCloud: organización `clickcultivossayonara`, proyecto `clickcultivossayonara_CRM-Compras`. Usa el Quality Gate "Sonar way" y el código nuevo se mide a **30 días**.
-- En GitHub: el secreto `SONAR_TOKEN` y las variables `SONAR_ORGANIZATION` y `SONAR_PROJECT_KEY`. El token solo permite analizar; no sirve para administrar el proyecto. El responsable decidió no regenerarlo.
+- En GitHub: el secreto `SONAR_TOKEN` y las variables `SONAR_ORGANIZATION` y `SONAR_PROJECT_KEY`. El token solo permite analizar; no sirve para administrar el proyecto. El 18/11/2026 el anterior dejó de ser válido ("The provided token is invalid") y el responsable generó uno nuevo **sin vencimiento** y lo actualizó en GitHub. Si vuelve a fallar: el responsable lo regenera en sonarcloud.io → My Account → Security y lo guarda en el repositorio → Settings → Secrets and variables → Actions → `SONAR_TOKEN`; luego `gh run rerun <id>`. Claude no tiene acceso a SonarCloud y el token nunca pasa por el chat.
 - Para revisar un PR: `gh run list --branch <rama>`, luego `gh run view <id> --log | grep "QUALITY GATE"`.
 
 ## 8. Hooks del proyecto (`.claude/settings.json`)
@@ -158,10 +178,15 @@ Verificación completa antes de cada commit: ruff, formato, mypy, la suite con c
 - **ruff format** convierte los escapes `\uXXXX` en el carácter literal, y RUF001 lo rechaza: generar esos textos con `chr()`.
 - **SonarCloud y uv en scripts:** `uv sync` o `uv run` sin `--no-build` en un `.sh` es una vulnerabilidad nueva ("Omitting --no-build…") y tumba el Quality Gate de seguridad. En scripts usar `uv sync --frozen --no-build` y `uv run --no-sync --no-build`.
 - **Ver por qué falla el Quality Gate:** `Invoke-RestMethod "https://sonarcloud.io/api/qualitygates/project_status?projectKey=clickcultivossayonara_CRM-Compras&pullRequest=<n>"` (el proyecto es público).
+- **Alembic sin `alembic.ini`:** con la configuración en `pyproject.toml`, `config.get_main_option(...)` busca el `.ini` y falla. El URL se pasa en `config.attributes["url"]` y, si no viene, se toma de `DATABASE_URL`.
+- **FastAPI 0.162** agrupa los routers incluidos en un `_IncludedRouter` y ya no los expone en `app.routes`: para listar rutas se usa `app.openapi()["paths"]`.
+- **`uv add`** reinstala el entorno sin los grupos opcionales: después correr `uv sync --group propiedad` o mypy no encuentra Hypothesis.
+- **Las pruebas con base no pueden limpiar con `DELETE`** (la auditoría lo impide): todo va en una transacción revertida (`bd`). El humo deja su usuario guardado en la base de pruebas; no asumir que la tabla `usuario` está vacía.
+- **Los `ERROR` del contenedor de PostgreSQL al final del log de CI** (violaciones de restricciones) son de las pruebas que intentan guardar datos inválidos a propósito; no son fallas.
 
 ## 10. Pendientes
 
-- **PostgreSQL en WSL** y luego **fase 2** (T2.1 a T2.4). Ver `docs/spec/tareas.md`.
+- **Fase 3** (T3.1 a T3.3) y luego fases 4 y 5. Ver `docs/spec/tareas.md`.
 - **E4:** versión de Softland y si permite importación automática (fuera del MVP).
 - **F1, trabajo futuro (al terminar las 5 fases, pedido por el responsable):** diagrama interactivo de la arquitectura con **Archify** (`https://github.com/tt-a1i/archify`, skill para agentes, Apache-2.0). Revisar su código y fijar la versión antes de instalarla; sin datos reales, IP ni credenciales en el diagrama. Ver `tareas.md` → "Trabajo futuro". No adelantarlo antes de cerrar la fase 5.
-- Las pruebas adicionales que esperan su tarea: I2 (T4.4), C1 y X1 (T3.2), C2 (T4.6), S1 (T2.3), R1 (T4.1 y T4.4), y E1, A1 y S3 (fase 5). M1 ya está hecha (T1.10).
+- Las pruebas adicionales que esperan su tarea: C1 y X1 (T3.2), I2 (T4.4), C2 (T4.6), R1 (T4.1 y T4.4), y E1, A1 y S3 (fase 5). Ya hechas: M1 (T1.10), I1 (T2.1) y S1 (T2.3, crece con cada ruta).
