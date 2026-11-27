@@ -45,14 +45,26 @@ Las reglas del dominio y el stack están en `CLAUDE.md`, y la especificación en
 | T2.3 Sesión, argon2, CSRF, roles por ruta + S1 | ✅ | PR #20 |
 | T2.4 Administración (usuarios, asignaciones, unidades) + `crear_administrador` | ✅ | PR #21 |
 | T3.1 API del sincronizador `/sync/*` (token, upsert, inactivación) | ✅ | PR #22 |
-| **Siguiente: T3.2, sincronizador local** | ⏭️ **siguiente** | — |
+| T3.2 Sincronizador local (`sincronizador/`) + C1 + X1 | ✅ | PR #24 |
+| T3.3 Indicador de la última sincronización (aviso a las 24 h) | ✅ | PR #25 |
+| **Fase 3 (sincronización) completa. Siguiente: fase 4, T4.1** | ⏭️ **siguiente** | — |
 
-Los 21 PR están fusionados en `main` con el workflow y el Quality Gate en verde (396 pruebas en CI con PostgreSQL 16, cobertura del 100 %; mutación del dominio 97,7 %).
+Los 25 PR están fusionados en `main` con el workflow y el Quality Gate en verde (489 pruebas en CI con PostgreSQL 16, cobertura del 100 %; mutación del dominio 97,6 %).
 
-**Próxima sesión (fase 3, sincronización con Softland):**
-1. **T3.1 (hecha, PR #22)**: `POST /sync/{articulos|centros|precios}` con `Authorization: Bearer ${SYNC_TOKEN}`. Contrato Pydantic compartido en `crm_compras/contrato_sync.py` (`EnvioArticulos`, `EnvioCentros`, `EnvioPrecios`, `RespuestaSync`): **el sincronizador de T3.2 debe usarlo para armar sus envíos (C1)**. Artículos y centros con upsert e inactivación por `sincronizado_en < ahora`; precios se reemplazan (`inactivados` = retirados) y exigen que el artículo exista. Listas de códigos con `= ANY(:codigos)`. Rutas en S1 como `CON_TOKEN`. `SYNC_TOKEN` en `Configuracion.token_sync` (mínimo 32).
-2. **T3.2**: sincronizador local (`sincronizador/`) con `pyodbc`, consultas `SELECT` fijas tomadas de `C:\Apps\Almacen\app.py`, `precios.normalizar` y envío por HTTPS. Pruebas con un doble de Softland. C1 (contrato compartido) y X1 (manual contra Softland real).
-3. **T3.3**: fecha de la última sincronización en pantalla, con advertencia si pasaron más de 24 horas (R6.5).
+**Cómo quedó la fase 3:**
+- **API** (`web/rutas_sync.py`): `POST /sync/{articulos|centros|precios}` con `Authorization: Bearer ${SYNC_TOKEN}`. Contrato Pydantic compartido en `crm_compras/contrato_sync.py`. Artículos y centros con upsert e inactivación por `sincronizado_en < ahora`; precios se reemplazan (`inactivados` = retirados) y exigen que el artículo exista. Listas de códigos con `= ANY(:codigos)`. Rutas en S1 como `CON_TOKEN`.
+- **Sincronizador** (`sincronizador/`, `uv run python -m sincronizador`): `lectura.py` (solo lectura, compartida con el MCP), `consultas.py` (última compra con cualquier proveedor desde el 1 de enero del año anterior), `preparar.py` (descarta y reporta filas inválidas), `envio.py` (solo HTTPS, `Transporte` inyectable), `__main__.py` (no envía catálogos vacíos; salida 0, 1 o 2). Variables: `SOFTLAND_*`, `CRM_URL_API`, `SYNC_TOKEN`. Doble de Softland en `tests/sincronizador/doble_softland.py`.
+- **X1 real (27/11/2026):** 4.238 artículos (7 descartados por código que no tiene 6 dígitos), 171 centros (1 descartado), 2.115 precios (5 descartados). Se sugirió al responsable revisar esos códigos en Softland.
+- **Frescura:** `dominio/sincronizacion.evaluar` (la más vieja de los 3 tipos; aviso si falta uno o > 24 h); `RepositorioSincronizacion` inyectado en `crear_app(sincronizaciones=...)`; en pruebas sin base, fixture `sincronizaciones` (doble en memoria).
+
+**Próxima sesión (fase 4, funciones del MVP)**, en orden de `tareas.md`:
+1. **T4.1** carga del presupuesto: subir el `.xlsx` (openpyxl con fórmulas → `lector_presupuesto.leer_presupuesto`), vista previa, confirmar y recargar sin perder consumo; R1: carga < 5 s.
+2. **T4.2** saldo por partida y semana (`presupuesto.saldos`, `disponibles`).
+3. **T4.3** prohibidos del jefe.
+4. **T4.4** pedido (búsqueda, líneas, sugerencia de partida, validación en vivo con HTMX, envío) + I2 (bloqueo de fila, sin sobregiro) + R1 (búsqueda < 300 ms con 20.000 artículos).
+5. **T4.5** bandejas de Gerente y Comprador.
+6. **T4.6** lote y descarga del cargador `.xlsx` + C2 (golden file).
+Toda ruta nueva va en la matriz S1.
 
 **Cómo quedó la capa de datos y la web (fase 2):**
 - `datos/conexion.BaseDatos(url=None, conexion=None)`: reparte sesiones con `.sesion()`; el motor se crea al primer uso desde `DATABASE_URL`. Con `conexion`, los `commit` son puntos de guardado (lo usan las pruebas).
@@ -186,7 +198,8 @@ Verificación completa antes de cada commit: ruff, formato, mypy, la suite con c
 
 ## 10. Pendientes
 
-- **Fase 3** (T3.1 a T3.3) y luego fases 4 y 5. Ver `docs/spec/tareas.md`.
+- **Fase 4** (T4.1 a T4.6) y luego la fase 5. Ver `docs/spec/tareas.md`.
+- **Datos de Softland por revisar** (responsable): 7 artículos y 1 centro de costo con código mal formado no llegan a la app.
 - **E4:** versión de Softland y si permite importación automática (fuera del MVP).
 - **F1, trabajo futuro (al terminar las 5 fases, pedido por el responsable):** diagrama interactivo de la arquitectura con **Archify** (`https://github.com/tt-a1i/archify`, skill para agentes, Apache-2.0). Revisar su código y fijar la versión antes de instalarla; sin datos reales, IP ni credenciales en el diagrama. Ver `tareas.md` → "Trabajo futuro". No adelantarlo antes de cerrar la fase 5.
-- Las pruebas adicionales que esperan su tarea: C1 y X1 (T3.2), I2 (T4.4), C2 (T4.6), R1 (T4.1 y T4.4), y E1, A1 y S3 (fase 5). Ya hechas: M1 (T1.10), I1 (T2.1) y S1 (T2.3, crece con cada ruta).
+- Las pruebas adicionales que esperan su tarea: I2 (T4.4), C2 (T4.6), R1 (T4.1 y T4.4), y E1, A1 y S3 (fase 5). Ya hechas: M1 (T1.10), I1 (T2.1), S1 (T2.3, crece con cada ruta), C1 y X1 (T3.2).
