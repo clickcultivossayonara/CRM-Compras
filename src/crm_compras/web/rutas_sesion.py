@@ -1,14 +1,18 @@
-"""Inicio y cierre de sesión, y página de inicio (R6.1)."""
+"""Inicio y cierre de sesión, y página de inicio con la frescura de los datos (R6.1, R6.5)."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
+from crm_compras.datos.sincronizacion import RepositorioSincronizacion
 from crm_compras.datos.usuarios import UsuarioSesion
 from crm_compras.dominio.pedido import Rol
+from crm_compras.dominio.sincronizacion import evaluar
 from crm_compras.web.seguridad import (
     CAMPO_CSRF,
     CLAVE_SESION_USUARIO,
@@ -22,6 +26,7 @@ from crm_compras.web.seguridad import (
 
 LARGO_MAXIMO = 128
 MENSAJE_FALLIDO = "Usuario o contraseña incorrectos."
+ZONA = ZoneInfo("America/Bogota")
 
 plantillas = Jinja2Templates(directory=Path(__file__).parent / "plantillas")
 router = APIRouter(dependencies=[Depends(verificar_csrf)])
@@ -66,8 +71,18 @@ def cerrar_sesion(request: Request) -> Response:
 
 @router.get("/", response_class=HTMLResponse)
 def inicio(request: Request, usuario: CualquierRol) -> Response:
+    sincronizaciones: RepositorioSincronizacion = request.app.state.sincronizaciones
+    estado = evaluar(sincronizaciones.ultimas(), datetime.now(UTC))
     return plantillas.TemplateResponse(
         request,
         "inicio.html",
-        {"usuario": usuario, "campo_csrf": CAMPO_CSRF, "csrf": token_csrf(request)},
+        {
+            "usuario": usuario,
+            "campo_csrf": CAMPO_CSRF,
+            "csrf": token_csrf(request),
+            "sincronizacion": estado,
+            "ultima_sincronizacion": (
+                estado.ultima.astimezone(ZONA).strftime("%d/%m/%Y %H:%M") if estado.ultima else None
+            ),
+        },
     )

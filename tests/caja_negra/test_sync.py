@@ -173,3 +173,17 @@ def test_precio_de_un_articulo_desconocido_rechaza_todo(enviar: Any, bd: BaseDat
 def test_un_envio_vacio_inactiva_todo_el_catalogo(enviar: Any) -> None:
     enviar("articulos", {"articulos": [articulo("020093"), articulo("000001")]})
     assert enviar("articulos", {"articulos": []}).json() == {"recibidos": 0, "inactivados": 2}
+
+
+def test_el_inicio_refleja_una_sincronizacion_completa(
+    enviar: Any, cliente_bd: httpx2.Client, entrar_bd: Any
+) -> None:
+    enviar("articulos", {"articulos": [articulo("020093")]})
+    enviar("centros", {"centros": [centro("513-01-2")]})
+    entrar_bd(cliente_bd, "jefe")
+    assert "tienen más de 24 horas sin actualizarse" in cliente_bd.get("/").text
+    enviar("precios", {"precios": [precio("020093")]})
+    pagina = cliente_bd.get("/").text
+    assert "Última sincronización con Softland: " in pagina
+    assert "todavía no se ha completado" not in pagina
+    assert "tienen más de 24 horas sin actualizarse" not in pagina

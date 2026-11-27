@@ -39,7 +39,7 @@ Referencias: [requisitos.md](requisitos.md) · [diseno.md](diseno.md)
 - [x] **T3.2** Sincronizador: consultas de solo lectura (tomadas de Almacen), normalización de precios y envío. Pruebas con un doble de Softland. → R6.2, R6.4
   - [x] **T3.2c** C1: esquema compartido del contrato, probado del lado del sincronizador y del lado de la API. → R6.2
   - [x] **T3.2x** X1: pruebas manuales `-m softland` contra Softland real (requiere E1). → R6.2
-- [ ] **T3.3** Indicador de última sincronización con advertencia a las 24 horas. → R6.5
+- [x] **T3.3** Indicador de última sincronización con advertencia a las 24 horas. → R6.5
 
 ## Fase 4 — Funciones del MVP
 - [ ] **T4.1** Carga de presupuesto: subir el archivo, vista previa, confirmar y recargar sin perder consumo. R1: carga < 5 s. → R1.1–R1.10

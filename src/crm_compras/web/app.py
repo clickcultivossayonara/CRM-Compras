@@ -9,6 +9,10 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from crm_compras.datos.conexion import BaseDatos
+from crm_compras.datos.sincronizacion import (
+    RepositorioSincronizacion,
+    RepositorioSincronizacionSQL,
+)
 from crm_compras.datos.usuarios import RepositorioUsuarios, RepositorioUsuariosSQL
 from crm_compras.web import rutas_admin, rutas_sesion, rutas_sync
 from crm_compras.web.configuracion import Configuracion
@@ -25,12 +29,14 @@ def crear_app(
     configuracion: Configuracion | None = None,
     usuarios: RepositorioUsuarios | None = None,
     base: BaseDatos | None = None,
+    sincronizaciones: RepositorioSincronizacion | None = None,
 ) -> FastAPI:
     configuracion = configuracion or Configuracion.desde_entorno()
     base = base or BaseDatos()
     app = FastAPI(title="CRM-Compras")
     app.state.base = base
     app.state.usuarios = usuarios or RepositorioUsuariosSQL(base)
+    app.state.sincronizaciones = sincronizaciones or RepositorioSincronizacionSQL(base)
     app.state.token_sync = configuracion.token_sync
     app.add_middleware(
         SessionMiddleware,
