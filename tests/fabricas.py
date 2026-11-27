@@ -1,6 +1,7 @@
 """Fábricas de datos ficticios compartidas por las pruebas."""
 
 import secrets
+from datetime import datetime
 
 from crm_compras.datos.usuarios import UsuarioSesion
 from crm_compras.dominio.pedido import Rol
@@ -44,3 +45,13 @@ class RepositorioUsuariosMemoria:
 
     def por_id(self, usuario_id: int) -> UsuarioSesion | None:
         return self.usuarios.get(usuario_id)
+
+
+class RepositorioSincronizacionMemoria:
+    """Doble de prueba del registro de sincronizaciones."""
+
+    def __init__(self, ultimas: dict[str, datetime] | None = None) -> None:
+        self.ultimas_registradas = ultimas or {}
+
+    def ultimas(self) -> dict[str, datetime]:
+        return dict(self.ultimas_registradas)

@@ -13,7 +13,12 @@ from crm_compras.web.app import crear_app
 from crm_compras.web.configuracion import Configuracion
 from crm_compras.web.seguridad import autenticar, cifrar_clave, clave_valida, requiere_roles
 from tests.conftest import csrf_de
-from tests.fabricas import RepositorioUsuariosMemoria, clave_aleatoria, usuario
+from tests.fabricas import (
+    RepositorioSincronizacionMemoria,
+    RepositorioUsuariosMemoria,
+    clave_aleatoria,
+    usuario,
+)
 
 
 @pytest.mark.parametrize(("rol", "codigo"), [(Rol.GERENTE, 200), (Rol.JEFE, 403)])
@@ -21,7 +26,9 @@ def test_una_ruta_solo_para_un_rol(rol: Rol, codigo: int) -> None:
     clave = clave_aleatoria()
     cuenta = usuario(1, rol, clave)
     app = crear_app(
-        Configuracion(clave_secreta=secrets.token_hex(32)), RepositorioUsuariosMemoria([cuenta])
+        Configuracion(clave_secreta=secrets.token_hex(32)),
+        RepositorioUsuariosMemoria([cuenta]),
+        sincronizaciones=RepositorioSincronizacionMemoria(),
     )
 
     @app.get("/solo-gerente")

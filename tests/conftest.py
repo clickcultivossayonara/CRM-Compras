@@ -20,7 +20,12 @@ from crm_compras.dominio.pedido import Rol
 from crm_compras.web.app import crear_app
 from crm_compras.web.configuracion import Configuracion
 from tests.base_pruebas import configuracion_alembic, url_pruebas
-from tests.fabricas import RepositorioUsuariosMemoria, clave_aleatoria, usuario
+from tests.fabricas import (
+    RepositorioSincronizacionMemoria,
+    RepositorioUsuariosMemoria,
+    clave_aleatoria,
+    usuario,
+)
 
 _MARCAS = {
     "unitarias": "unitaria",
@@ -57,7 +62,15 @@ def cuentas() -> dict[str, Cuenta]:
 
 
 @pytest.fixture
-def cliente(cuentas: dict[str, Cuenta]) -> Iterator[httpx2.Client]:
+def sincronizaciones() -> RepositorioSincronizacionMemoria:
+    """Registro de sincronizaciones de la app en memoria; vacío salvo que la prueba lo llene."""
+    return RepositorioSincronizacionMemoria()
+
+
+@pytest.fixture
+def cliente(
+    cuentas: dict[str, Cuenta], sincronizaciones: RepositorioSincronizacionMemoria
+) -> Iterator[httpx2.Client]:
     """Cliente solo por HTTP. Con CRM_URL_BASE prueba un servidor real; si no, la app en memoria.
 
     En memoria se usa https para que la cookie Secure viaje igual que en producción.
@@ -70,6 +83,7 @@ def cliente(cuentas: dict[str, Cuenta]) -> Iterator[httpx2.Client]:
         app = crear_app(
             Configuracion(clave_secreta=secrets.token_hex(32)),
             RepositorioUsuariosMemoria([u for u, _ in cuentas.values()]),
+            sincronizaciones=sincronizaciones,
         )
         with TestClient(app, base_url="https://testserver") as c:
             yield c

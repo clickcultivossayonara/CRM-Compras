@@ -6,14 +6,15 @@ Precios: se reemplazan; un precio que no llega se retira. Cada envío queda en `
 
 from collections.abc import Iterator, Sequence
 from datetime import datetime
-from typing import Any
+from typing import Any, Protocol
 
-from sqlalchemy import String, any_, bindparam, delete, not_, select, update
+from sqlalchemy import String, any_, bindparam, delete, func, not_, select, update
 from sqlalchemy.dialects.postgresql import ARRAY, insert
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import BindParameter
 
 from crm_compras.contrato_sync import ArticuloSync, CentroSync, PrecioSync
+from crm_compras.datos.conexion import BaseDatos
 from crm_compras.datos.modelos import Articulo, CentroCosto, Precio, Sincronizacion
 
 TAMANO_LOTE = 1000
@@ -106,3 +107,23 @@ def sincronizar_precios(sesion: Session, precios: Sequence[PrecioSync]) -> tuple
     ).all()
     _registrar(sesion, "precios", len(precios))
     return len(precios), len(retirados)
+
+
+class RepositorioSincronizacion(Protocol):
+    def ultimas(self) -> dict[str, datetime]:
+        """Fecha del último envío recibido de cada tipo."""
+        ...
+
+
+class RepositorioSincronizacionSQL:
+    def __init__(self, base: BaseDatos) -> None:
+        self._base = base
+
+    def ultimas(self) -> dict[str, datetime]:
+        with self._base.sesion() as sesion:
+            filas = sesion.execute(
+                select(Sincronizacion.tipo, func.max(Sincronizacion.recibido_en)).group_by(
+                    Sincronizacion.tipo
+                )
+            )
+            return {tipo: fecha for tipo, fecha in filas}

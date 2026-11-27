@@ -2,6 +2,8 @@
 
 import base64
 import json
+from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import httpx2
 import pytest
@@ -9,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from crm_compras.datos.usuarios import UsuarioSesion
 from tests.conftest import INACTIVO, Cuenta, Entrar, csrf_de
-from tests.fabricas import RepositorioUsuariosMemoria
+from tests.fabricas import RepositorioSincronizacionMemoria, RepositorioUsuariosMemoria
 
 MENSAJE_FALLIDO = "Usuario o contraseña incorrectos."
 
@@ -154,3 +156,37 @@ def test_un_usuario_desactivado_pierde_la_sesion_de_inmediato(
         jefe.id, jefe.usuario, jefe.nombre, jefe.rol, False, jefe.hash_clave
     )
     assert cliente.get("/", follow_redirects=False).status_code == 303
+
+
+AVISO = "tienen más de 24 horas sin actualizarse"
+
+
+def test_inicio_muestra_la_ultima_sincronizacion_en_hora_de_bogota(
+    cliente: httpx2.Client, entrar: Entrar, sincronizaciones: RepositorioSincronizacionMemoria
+) -> None:
+    hace_una_hora = datetime.now(UTC) - timedelta(hours=1)
+    sincronizaciones.ultimas_registradas = dict.fromkeys(
+        ("articulos", "centros", "precios"), hace_una_hora
+    )
+    entrar(cliente, "jefe")
+    pagina = cliente.get("/").text
+    local = hace_una_hora.astimezone(ZoneInfo("America/Bogota")).strftime("%d/%m/%Y %H:%M")
+    assert f"Última sincronización con Softland: {local}." in pagina
+    assert AVISO not in pagina
+
+
+def test_inicio_avisa_si_la_sincronizacion_esta_atrasada(
+    cliente: httpx2.Client, entrar: Entrar, sincronizaciones: RepositorioSincronizacionMemoria
+) -> None:
+    sincronizaciones.ultimas_registradas = dict.fromkeys(
+        ("articulos", "centros", "precios"), datetime.now(UTC) - timedelta(days=2)
+    )
+    entrar(cliente, "comprador")
+    assert AVISO in cliente.get("/").text
+
+
+def test_inicio_sin_ninguna_sincronizacion(cliente: httpx2.Client, entrar: Entrar) -> None:
+    entrar(cliente, "gerente")
+    pagina = cliente.get("/").text
+    assert "Última sincronización con Softland: todavía no se ha completado." in pagina
+    assert AVISO in pagina

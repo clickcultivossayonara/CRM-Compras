@@ -2,6 +2,10 @@
 {% block contenido %}
 <h1>CRM Compras</h1>
 <p>Hola, {{ usuario.nombre }} ({{ usuario.rol.value }}).</p>
+<p>Última sincronización con Softland: {{ ultima_sincronizacion or "todavía no se ha completado" }}.</p>
+{% if sincronizacion.atrasada %}
+<p role="alert">Atención: los artículos, centros de costo o precios de Softland tienen más de 24 horas sin actualizarse. Pueden estar desactualizados.</p>
+{% endif %}
 {% if usuario.rol.value == "administrador" %}
 <nav>
   <a href="/admin/usuarios">Usuarios</a> · <a href="/admin/unidades">Unidades con decimales</a>
