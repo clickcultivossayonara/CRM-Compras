@@ -33,6 +33,13 @@ PUBLICAS = {
     ("GET", "/redoc"),
 }
 
+# Rutas del sincronizador: sin sesión ni CSRF, con el token SYNC_TOKEN.
+CON_TOKEN = {
+    ("POST", "/sync/articulos"),
+    ("POST", "/sync/centros"),
+    ("POST", "/sync/precios"),
+}
+
 ADMINISTRADOR = frozenset({Rol.ADMINISTRADOR})
 
 # Rutas con sesión y los roles que pueden usarlas.
@@ -70,12 +77,23 @@ def rutas_de_la_app() -> set[tuple[str, str]]:
 
 
 def test_toda_ruta_esta_en_la_matriz() -> None:
-    sin_declarar = rutas_de_la_app() - PUBLICAS - set(MATRIZ)
+    sin_declarar = rutas_de_la_app() - PUBLICAS - CON_TOKEN - set(MATRIZ)
     assert not sin_declarar, f"Rutas sin permisos declarados en S1: {sorted(sin_declarar)}"
 
 
 def test_la_matriz_no_tiene_rutas_que_ya_no_existen() -> None:
-    assert (PUBLICAS | set(MATRIZ)) <= rutas_de_la_app()
+    assert (PUBLICAS | CON_TOKEN | set(MATRIZ)) <= rutas_de_la_app()
+
+
+@pytest.mark.parametrize("ruta", sorted(ruta for _, ruta in CON_TOKEN))
+def test_las_rutas_con_token_lo_exigen_aunque_haya_sesion(
+    cliente: httpx2.Client, entrar: Entrar, ruta: str
+) -> None:
+    # La app en memoria no tiene SYNC_TOKEN: ni siquiera un administrador con sesión pasa.
+    entrar(cliente, "administrador")
+    token = csrf_de(cliente.get("/").text)
+    respuesta = cliente.post(ruta, json={}, headers={"X-CSRF-Token": token})
+    assert respuesta.status_code == 401
 
 
 def concreta(ruta: str, cuentas: dict[str, Cuenta]) -> str:

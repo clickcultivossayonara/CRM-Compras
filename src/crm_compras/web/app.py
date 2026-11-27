@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from crm_compras.datos.conexion import BaseDatos
 from crm_compras.datos.usuarios import RepositorioUsuarios, RepositorioUsuariosSQL
-from crm_compras.web import rutas_admin, rutas_sesion
+from crm_compras.web import rutas_admin, rutas_sesion, rutas_sync
 from crm_compras.web.configuracion import Configuracion
 from crm_compras.web.seguridad import SinSesion
 
@@ -31,6 +31,7 @@ def crear_app(
     app = FastAPI(title="CRM-Compras")
     app.state.base = base
     app.state.usuarios = usuarios or RepositorioUsuariosSQL(base)
+    app.state.token_sync = configuracion.token_sync
     app.add_middleware(
         SessionMiddleware,
         secret_key=configuracion.clave_secreta,
@@ -42,6 +43,7 @@ def crear_app(
     app.add_exception_handler(SinSesion, _redirigir_al_login)
     app.include_router(rutas_sesion.router)
     app.include_router(rutas_admin.router)
+    app.include_router(rutas_sync.router)
 
     @app.get("/salud")
     def salud() -> dict[str, str]:

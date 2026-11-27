@@ -115,8 +115,10 @@ Cualquier otra transición genera `TransicionInvalida`.
 {"precios":   [{"articulo": "020093", "precio_unitario": 123, "fecha_compra": "2026-10-20", "orden_compra": "OC-1"}]}
 ```
 
-- La respuesta es `200 {"recibidos": n, "inactivados": m}`.
-- Un código que no cumple el formato rechaza todo el envío con `422`.
+- La respuesta es `200 {"recibidos": n, "inactivados": m}`. En precios, `inactivados` cuenta los precios retirados.
+- Un código que no cumple el formato rechaza todo el envío con `422`. También: códigos repetidos en el envío, campos desconocidos, precio con decimales o negativo, y precios de artículos que no existen (primero se sincronizan los artículos).
+- Sin token, con token errado o sin `SYNC_TOKEN` configurado en el servidor: `401`. El token se revisa antes que el cuerpo.
+- Implementación (T3.1): el contrato está en `crm_compras/contrato_sync.py` y lo comparten la API y el sincronizador (C1). Artículos y centros se insertan o actualizan con un upsert; lo que no llega queda con `activo = false` (R6.3) y vuelve a activarse si llega de nuevo. Las listas de códigos viajan como un solo parámetro de tipo arreglo (`= ANY(:codigos)`) para no superar el límite de 65.535 parámetros de PostgreSQL. Cada envío queda en `sincronizacion`.
 - Las consultas de Softland salen de `C:\Apps\Almacen\app.py`. El precio es el de la compra más reciente del artículo con cualquier proveedor, redondeado a pesos enteros.
 
 ## 6. Cargador (R5)
