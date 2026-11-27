@@ -182,103 +182,104 @@ def _referencias(fila: Sequence[object], meses: dict[int, int]) -> set[int] | No
 def _leer_partidas(
     filas: Sequence[Sequence[object]], meses: dict[int, int], inicio: int, lectura: Lectura
 ) -> None:
+    formulas, hojas = _clasificar_filas(filas, meses, inicio, lectura)
+    _Armador(filas, meses, formulas, hojas, lectura).armar()
+    _validar_repetidas(lectura)
+
+
+def _clasificar_filas(
+    filas: Sequence[Sequence[object]], meses: dict[int, int], inicio: int, lectura: Lectura
+) -> tuple[dict[int, set[int]], set[int]]:
+    """Fórmulas (fila → filas que suma) y filas con valores; reporta las filas que no sirven."""
     formulas: dict[int, set[int]] = {}
     hojas: set[int] = set()
     for numero in range(inicio, len(filas) + 1):
         fila = filas[numero - 1]
         referencias = _referencias(fila, meses)
-        tiene_valores = any(_celda(fila, c) is not None for c in meses)
+        nombre = _nombre(fila)
         if referencias is not None:
             if not referencias:
                 lectura.errores.append(f"Fila {numero}: la fórmula no suma ninguna fila.")
             formulas[numero] = referencias
-        elif _nombre(fila) and tiene_valores:
+        elif nombre and any(_celda(fila, c) is not None for c in meses):
             hojas.add(numero)
-        elif _nombre(fila):
-            lectura.advertencias.append(
-                f"Fila {numero} ({_nombre(fila)}) no tiene valores; se ignora."
-            )
+        elif nombre:
+            lectura.advertencias.append(f"Fila {numero} ({nombre}) no tiene valores; se ignora.")
         elif any(_es_numero(_celda(fila, c)) for c in meses):
             lectura.errores.append(f"Fila {numero}: tiene valores y no tiene nombre.")
-
-    referenciadas = set().union(*formulas.values())
-    asignadas: dict[int, str] = {}
-    for raiz in sorted(set(formulas) - referenciadas):
-        if formulas[raiz] & formulas.keys():
-            # Total general: sus fórmulas son rubros y sus filas con valores, partidas GENERAL.
-            for hija in sorted(formulas[raiz]):
-                if hija in formulas:
-                    _agregar_rubro(filas, formulas, hojas, hija, asignadas, lectura, meses)
-                elif hija in hojas:
-                    _agregar(
-                        filas,
-                        hija,
-                        _nombre(filas[hija - 1]),
-                        AREA_GENERAL,
-                        asignadas,
-                        lectura,
-                        meses,
-                    )
-        else:
-            _agregar_rubro(filas, formulas, hojas, raiz, asignadas, lectura, meses)
-
-    for hoja in sorted(hojas - asignadas.keys()):
-        _agregar(filas, hoja, _nombre(filas[hoja - 1]), AREA_GENERAL, asignadas, lectura, meses)
-    _validar_repetidas(lectura)
+    return formulas, hojas
 
 
-def _agregar_rubro(
-    filas: Sequence[Sequence[object]],
-    formulas: dict[int, set[int]],
-    hojas: set[int],
-    rubro: int,
-    asignadas: dict[int, str],
-    lectura: Lectura,
-    meses: dict[int, int],
-) -> None:
-    nombre_rubro = _nombre(filas[rubro - 1])
-    for hoja, area in _areas(filas, formulas, hojas, rubro, "", {rubro}):
-        _agregar(filas, hoja, nombre_rubro, area, asignadas, lectura, meses)
+class _Armador:
+    """Convierte las fórmulas y filas con valores en partidas rubro x área."""
 
+    def __init__(
+        self,
+        filas: Sequence[Sequence[object]],
+        meses: dict[int, int],
+        formulas: dict[int, set[int]],
+        hojas: set[int],
+        lectura: Lectura,
+    ) -> None:
+        self.filas = filas
+        self.meses = meses
+        self.formulas = formulas
+        self.hojas = hojas
+        self.lectura = lectura
+        self.asignadas: dict[int, str] = {}
 
-def _areas(
-    filas: Sequence[Sequence[object]],
-    formulas: dict[int, set[int]],
-    hojas: set[int],
-    fila: int,
-    prefijo: str,
-    visitadas: set[int],
-) -> Iterator[tuple[int, str]]:
-    """Filas con valores bajo una fórmula, con el nombre de área compuesto por los niveles."""
-    for hija in sorted(formulas[fila] - visitadas):
-        nombre = prefijo + _nombre(filas[hija - 1]) if hija <= len(filas) else ""
-        if hija in formulas:
-            yield from _areas(filas, formulas, hojas, hija, nombre + " - ", visitadas | {hija})
-        elif hija in hojas:
-            yield hija, nombre
+    def armar(self) -> None:
+        referenciadas: set[int] = set().union(*self.formulas.values())
+        for raiz in sorted(set(self.formulas) - referenciadas):
+            if self.formulas[raiz] & self.formulas.keys():
+                self._agregar_total(raiz)
+            else:
+                self._agregar_rubro(raiz)
+        for hoja in sorted(self.hojas - self.asignadas.keys()):
+            self._agregar_general(hoja)
 
+    def _nombre_fila(self, numero: int) -> str:
+        return _nombre(self.filas[numero - 1]) if numero <= len(self.filas) else ""
 
-def _agregar(
-    filas: Sequence[Sequence[object]],
-    numero: int,
-    rubro: str,
-    area: str,
-    asignadas: dict[int, str],
-    lectura: Lectura,
-    meses: dict[int, int],
-) -> None:
-    if numero in asignadas:
-        lectura.errores.append(
-            f"Fila {numero}: está en más de un rubro ({asignadas[numero]} y {rubro})."
-        )
-        return
-    asignadas[numero] = rubro
-    valores: dict[int, int] = {}
-    for columna, mes in meses.items():
-        valor = _convertir(_celda(filas[numero - 1], columna), numero, columna, lectura)
-        if valor is not None:
-            valores[mes] = valor
-    lectura.partidas.append(PartidaLeida(rubro, area, numero, valores))
+    def _agregar_total(self, total: int) -> None:
+        """El total general: sus fórmulas son rubros y sus filas con valores, partidas GENERAL."""
+        for hija in sorted(self.formulas[total]):
+            if hija in self.formulas:
+                self._agregar_rubro(hija)
+            elif hija in self.hojas:
+                self._agregar_general(hija)
+
+    def _agregar_general(self, hoja: int) -> None:
+        self._agregar(hoja, self._nombre_fila(hoja), AREA_GENERAL)
+
+    def _agregar_rubro(self, rubro: int) -> None:
+        nombre_rubro = self._nombre_fila(rubro)
+        for hoja, area in self._areas(rubro, "", {rubro}):
+            self._agregar(hoja, nombre_rubro, area)
+
+    def _areas(self, fila: int, prefijo: str, visitadas: set[int]) -> Iterator[tuple[int, str]]:
+        """Filas con valores bajo una fórmula, con el nombre de área compuesto por los niveles."""
+        for hija in sorted(self.formulas[fila] - visitadas):
+            nombre = prefijo + self._nombre_fila(hija)
+            if hija in self.formulas:
+                yield from self._areas(hija, nombre + " - ", visitadas | {hija})
+            elif hija in self.hojas:
+                yield hija, nombre
+
+    def _agregar(self, numero: int, rubro: str, area: str) -> None:
+        if numero in self.asignadas:
+            self.lectura.errores.append(
+                f"Fila {numero}: está en más de un rubro ({self.asignadas[numero]} y {rubro})."
+            )
+            return
+        self.asignadas[numero] = rubro
+        valores: dict[int, int] = {}
+        for columna, mes in self.meses.items():
+            celda = _celda(self.filas[numero - 1], columna)
+            valor = _convertir(celda, numero, columna, self.lectura)
+            if valor is not None:
+                valores[mes] = valor
+        self.lectura.partidas.append(PartidaLeida(rubro, area, numero, valores))
 
 
 def _es_numero(valor: object) -> bool:

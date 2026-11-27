@@ -13,7 +13,8 @@ Deriva de [requisitos.md](../spec/requisitos.md) y [diseno.md](../spec/diseno.md
 | Caja negra contra un servidor real | `CRM_URL_BASE=https://… uv run pytest tests/caja_negra` | — |
 | Propiedad (opcional) | `uv sync --group propiedad` y luego `uv run pytest -m propiedad` | — |
 | Mutación (M1, Linux o WSL) | `wsl -d Ubuntu -- bash herramientas/mutacion.sh` (umbral: 80 % de mutantes eliminados) | < 1 min |
-| Linter y formato | `uv run ruff check . && uv run ruff format --check .` | — |
+| Linter y formato | `uv run ruff check . && uv run ruff format --check .` (incluye complejidad ciclomática máxima de 10 por función, regla C901) | — |
+| Informe de complejidad | `uv run --with radon radon cc -s -a src sincronizador herramientas` | — |
 | Tipos | `uv run mypy` | — |
 | Auditoría de dependencias (S2) | `uv export --frozen --no-emit-project -o reports/requisitos-auditoria.txt` y luego `uv tool run pip-audit -r reports/requisitos-auditoria.txt --disable-pip --require-hashes --strict` | < 30 s |
 | Integración (I1) | `TEST_DATABASE_URL=postgresql://…@127.0.0.1:5432/crm_pruebas uv run pytest tests/integracion` | < 30 s |

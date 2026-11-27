@@ -93,7 +93,11 @@ target-version = "py312"
 src = ["src", "herramientas", "sincronizador", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "N"]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF", "N", "C90"]
+
+[tool.ruff.lint.mccabe]
+# Complejidad ciclomática máxima por función; una función que la supere se divide.
+max-complexity = 10
 
 [tool.ruff.lint.isort]
 known-first-party = ["crm_compras", "mcp_softland", "sincronizador", "tests"]
