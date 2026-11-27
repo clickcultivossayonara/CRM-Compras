@@ -47,9 +47,13 @@ Las reglas del dominio y el stack están en `CLAUDE.md`, y la especificación en
 | T3.1 API del sincronizador `/sync/*` (token, upsert, inactivación) | ✅ | PR #22 |
 | T3.2 Sincronizador local (`sincronizador/`) + C1 + X1 | ✅ | PR #24 |
 | T3.3 Indicador de la última sincronización (aviso a las 24 h) | ✅ | PR #25 |
-| **Fase 3 (sincronización) completa. Siguiente: fase 4, T4.1** | ⏭️ **siguiente** | — |
+| Skill: cierre de la fase 3 | ✅ | PR #26 |
+| Refactor de complejidad (`_leer_partidas` 16 → ≤ 10) + regla C901 (máximo 10) | ✅ | PR #27 |
+| **Fase 3 (sincronización) completa. Siguiente: fase 4, T4.1** (el responsable la deja para la próxima sesión) | ⏭️ **siguiente** | — |
 
-Los 25 PR están fusionados en `main` con el workflow y el Quality Gate en verde (489 pruebas en CI con PostgreSQL 16, cobertura del 100 %; mutación del dominio 97,6 %).
+Hasta el PR #26 todo está fusionado en `main` con el workflow y el Quality Gate en verde (489 pruebas en CI con PostgreSQL 16, cobertura del 100 %; mutación del dominio 97,4 %). **Al retomar, comprobar que el PR #27 (refactor) y el de esta actualización de la skill estén fusionados** (`gh pr list --state all --limit 3`).
+
+**Complejidad (revisada el 27/11/2026 a pedido del responsable):** `radon` sobre 254 funciones dio promedio 2,3 (A) y una sola en C (`_leer_partidas`, 16), que se dividió en `_clasificar_filas` y la clase `_Armador`. Desde el PR #27, **ruff C901 rechaza funciones con complejidad mayor a 10**: si una función nueva se pasa, se divide (no se sube el límite ni se usa `noqa`). Informe: `uv run --with radon radon cc -s -a src sincronizador herramientas`.
 
 **Cómo quedó la fase 3:**
 - **API** (`web/rutas_sync.py`): `POST /sync/{articulos|centros|precios}` con `Authorization: Bearer ${SYNC_TOKEN}`. Contrato Pydantic compartido en `crm_compras/contrato_sync.py`. Artículos y centros con upsert e inactivación por `sincronizado_en < ahora`; precios se reemplazan (`inactivados` = retirados) y exigen que el artículo exista. Listas de códigos con `= ANY(:codigos)`. Rutas en S1 como `CON_TOKEN`.
@@ -155,7 +159,7 @@ wsl -d Ubuntu -- bash herramientas/mutacion.sh       # M1, umbral 80 %, solo en 
 
 Las pruebas de propiedad importan Hypothesis dentro de la prueba; CI instala el grupo `propiedad` para mypy y pip-audit (`uv export ... --group propiedad`).
 
-Verificación completa antes de cada commit: ruff, formato, mypy, la suite con cobertura y la auditoría. Antes de subir, buscar secretos en los archivos cambiados (IP internas, `PWD=`, tokens `sq*_`/`gh*_`).
+Verificación completa antes de cada commit: ruff (incluye complejidad máxima 10, C901), formato, mypy, la suite con cobertura y la auditoría; si se tocó `dominio/`, también la mutación en WSL. Antes de subir, buscar secretos en los archivos cambiados (IP internas, `PWD=`, tokens `sq*_`/`gh*_`).
 
 ## 7. CI y SonarCloud
 
