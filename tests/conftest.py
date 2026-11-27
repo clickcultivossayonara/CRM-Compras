@@ -144,11 +144,20 @@ def cuentas_bd(bd: BaseDatos, cuentas: dict[str, Cuenta]) -> dict[str, Cuenta]:
     return resultado
 
 
+@pytest.fixture(scope="session")
+def token_sync() -> str:
+    """Token ficticio del sincronizador, nuevo en cada corrida."""
+    return secrets.token_urlsafe(32)
+
+
 @pytest.fixture
-def cliente_bd(bd: BaseDatos, cuentas_bd: dict[str, Cuenta]) -> Iterator[httpx2.Client]:
+def cliente_bd(
+    bd: BaseDatos, cuentas_bd: dict[str, Cuenta], token_sync: str
+) -> Iterator[httpx2.Client]:
     if os.environ.get("CRM_URL_BASE"):
         pytest.skip("La app con base de pruebas solo corre en memoria")
-    app = crear_app(Configuracion(clave_secreta=secrets.token_hex(32)), base=bd)
+    configuracion = Configuracion(clave_secreta=secrets.token_hex(32), token_sync=token_sync)
+    app = crear_app(configuracion, base=bd)
     with TestClient(app, base_url="https://testserver") as c:
         yield c
 

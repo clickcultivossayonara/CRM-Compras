@@ -3,7 +3,6 @@
 Todas las rutas son solo del Administrador y exigen CSRF en los POST.
 """
 
-from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
@@ -15,6 +14,7 @@ from crm_compras.datos.modelos import Usuario
 from crm_compras.datos.usuarios import UsuarioSesion
 from crm_compras.dominio.pedido import Rol
 from crm_compras.dominio.usuarios import LARGO_MAXIMO_CLAVE, errores_clave
+from crm_compras.web.dependencias import SesionBD
 from crm_compras.web.rutas_sesion import plantillas
 from crm_compras.web.seguridad import (
     CAMPO_CSRF,
@@ -24,16 +24,9 @@ from crm_compras.web.seguridad import (
     verificar_csrf,
 )
 
-
-def sesion_bd(request: Request) -> Iterator[Session]:
-    with request.app.state.base.sesion() as sesion:
-        yield sesion
-
-
 router = APIRouter(prefix="/admin", dependencies=[Depends(verificar_csrf)])
 
 Administrador = Annotated[UsuarioSesion, Depends(requiere_roles(Rol.ADMINISTRADOR))]
-SesionBD = Annotated[Session, Depends(sesion_bd)]
 Texto = Annotated[str, Form(max_length=LARGO_MAXIMO_CLAVE)]
 
 

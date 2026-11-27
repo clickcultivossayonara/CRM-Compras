@@ -82,3 +82,15 @@ def test_secret_key_corta_o_ausente_es_error(monkeypatch: pytest.MonkeyPatch, cl
     monkeypatch.setenv("SECRET_KEY", clave)
     with pytest.raises(ValueError, match="al menos 32 caracteres"):
         Configuracion.desde_entorno()
+
+
+def test_token_del_sincronizador(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SECRET_KEY", secrets.token_hex(32))
+    monkeypatch.delenv("SYNC_TOKEN", raising=False)
+    assert Configuracion.desde_entorno().token_sync is None
+    token = secrets.token_urlsafe(32)
+    monkeypatch.setenv("SYNC_TOKEN", token)
+    assert Configuracion.desde_entorno().token_sync == token
+    monkeypatch.setenv("SYNC_TOKEN", "x" * 31)
+    with pytest.raises(ValueError, match="SYNC_TOKEN debe tener al menos 32 caracteres"):
+        Configuracion.desde_entorno()
