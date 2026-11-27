@@ -1,47 +1,26 @@
-"""Consultas fijas de solo lectura a Softland.
+"""Consultas fijas de solo lectura a Softland para el MCP de desarrollo.
 
-El usuario de conexión tiene permisos de escritura, por eso la lectura se garantiza aquí:
-solo SQL fijo con parámetros, filtro que rechaza todo lo que no sea SELECT y ROLLBACK siempre.
+La garantía de solo lectura (SQL fijo, filtro de SELECT, READ UNCOMMITTED y ROLLBACK) está en
+``sincronizador.lectura`` y se comparte con el sincronizador.
 """
 
 import re
-from collections.abc import Sequence
-from typing import Any, Protocol
+from typing import Any
+
+from sincronizador.lectura import (
+    Conexion,
+    ConsultaNoPermitidaError,
+    ejecutar,
+    validar_solo_lectura,
+)
+
+__all__ = ["Conexion", "ConsultaNoPermitidaError", "ejecutar", "validar_solo_lectura"]
 
 ESQUEMA = "SAYONARA"
 LIMITE_MAXIMO = 20
 LARGO_MAXIMO_TEXTO = 50
 
-_PALABRAS_PROHIBIDAS = re.compile(
-    r"\b(INSERT|UPDATE|DELETE|MERGE|DROP|ALTER|CREATE|TRUNCATE|EXEC|EXECUTE"
-    r"|GRANT|REVOKE|DENY|INTO|BACKUP|RESTORE|DBCC)\b",
-    re.IGNORECASE,
-)
 _NOMBRE_TABLA = re.compile(r"^[A-Z0-9_]{1,128}$")
-
-
-class Cursor(Protocol):
-    description: Any
-
-    def execute(self, sql: str, *params: Any) -> Any: ...
-    def fetchall(self) -> Sequence[Sequence[Any]]: ...
-
-
-class Conexion(Protocol):
-    def cursor(self) -> Cursor: ...
-    def rollback(self) -> None: ...
-
-
-class ConsultaNoPermitidaError(ValueError):
-    """La consulta no es de solo lectura o los parámetros no son válidos."""
-
-
-def validar_solo_lectura(sql: str) -> None:
-    limpio = sql.strip()
-    if not limpio.upper().startswith(("SELECT", "WITH")):
-        raise ConsultaNoPermitidaError("Solo se permiten consultas SELECT")
-    if ";" in limpio or _PALABRAS_PROHIBIDAS.search(limpio):
-        raise ConsultaNoPermitidaError("La consulta contiene instrucciones no permitidas")
 
 
 def _texto(valor: str) -> str:
@@ -59,19 +38,6 @@ def _patron_like(texto: str) -> str:
 
 def _limite(limite: int) -> int:
     return max(1, min(int(limite), LIMITE_MAXIMO))
-
-
-def ejecutar(conexion: Conexion, sql: str, *params: Any) -> list[dict[str, Any]]:
-    validar_solo_lectura(sql)
-    cursor = conexion.cursor()
-    try:
-        # Lectura sin bloquear al ERP; nada de lo que se ejecuta aquí se confirma.
-        cursor.execute("SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED")
-        cursor.execute(sql, *params)
-        columnas = [c[0].lower() for c in cursor.description]
-        return [dict(zip(columnas, fila, strict=True)) for fila in cursor.fetchall()]
-    finally:
-        conexion.rollback()
 
 
 def listar_tablas(conexion: Conexion, filtro: str = "") -> list[str]:
